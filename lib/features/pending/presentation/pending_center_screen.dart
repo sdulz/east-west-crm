@@ -1,7 +1,7 @@
 import 'package:field_crm/app/env.dart';
 import 'package:field_crm/core/format/app_formatters.dart';
-import 'package:field_crm/core/widgets/async_view.dart';
 import 'package:field_crm/core/l10n/generated/app_localizations.dart';
+import 'package:field_crm/core/widgets/async_view.dart';
 import 'package:field_crm/core/widgets/failure_text.dart';
 import 'package:field_crm/features/pending/application/pending_queue_controller.dart';
 import 'package:field_crm/features/pending/domain/pending_write.dart';

@@ -142,4 +142,11 @@ class MockStore extends ChangeNotifier {
     _state = s;
     notifyListeners();
   }
+
+  /// Test/dev helper: mutate server state "behind the client's back".
+  void replaceStateStage(String opportunityId, String stageId) {
+    final i = state.opportunities.indexWhere((o) => o.id == opportunityId);
+    state.opportunities[i] = state.opportunities[i].copyWith(stageId: stageId);
+    notifyListeners();
+  }
 }
