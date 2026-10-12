@@ -31,7 +31,7 @@ Future<List<Activity>> myFollowUps(Ref ref) {
   );
 }
 
-@riverpod
+@Riverpod(keepAlive: true)
 class ActivitySaver extends _$ActivitySaver {
   @override
   void build() {}

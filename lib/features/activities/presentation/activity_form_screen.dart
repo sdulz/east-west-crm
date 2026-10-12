@@ -143,6 +143,7 @@ class _ActivityFormScreenState extends ConsumerState<ActivityFormScreen> {
             ),
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
+              isExpanded: true,
               key: const Key('related_picker'),
               initialValue: _relatedId,
               decoration: InputDecoration(

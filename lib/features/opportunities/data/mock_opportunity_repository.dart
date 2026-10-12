@@ -5,6 +5,7 @@ import 'package:field_crm/core/result/failure.dart';
 import 'package:field_crm/core/result/result.dart';
 import 'package:field_crm/features/activities/domain/activity.dart';
 import 'package:field_crm/features/history/domain/history_entry.dart';
+import 'package:field_crm/features/notifications/domain/app_notification.dart';
 import 'package:field_crm/features/opportunities/domain/opportunity.dart';
 import 'package:field_crm/features/opportunities/domain/opportunity_repository.dart';
 import 'package:field_crm/features/pipeline/domain/pipeline_stage.dart';
@@ -145,6 +146,14 @@ class MockOpportunityRepository implements OpportunityRepository {
       updatedAt: store.clock.now(),
     );
     _all[_all.indexWhere((x) => x.id == id)] = saved;
+    store.notify(
+      userId: newOwner.id,
+      kind: NotificationKind.assignment,
+      title: '${me.name} assigned you an opportunity',
+      body: saved.title,
+      relatedType: RelatedType.opportunity,
+      relatedId: saved.id,
+    );
     _addHistory(
       id,
       HistoryEntry(

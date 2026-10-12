@@ -87,6 +87,8 @@ Future<MockStore> buildMockStore({
     initial = saved == null
         ? reseed()
         : MockState.fromJson(jsonDecode(saved) as Map<String, dynamic>);
+    // Reference data added after a snapshot was taken is missing from it.
+    if (initial.products.isEmpty) initial.products.addAll(reseed().products);
   } on Object catch (e) {
     _log.warn('snapshot unreadable, reseeding: $e');
     initial = reseed();

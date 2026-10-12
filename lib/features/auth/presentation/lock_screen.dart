@@ -1,6 +1,7 @@
 import 'package:field_crm/app/providers.dart';
 import 'package:field_crm/core/result/result.dart';
 import 'package:field_crm/core/widgets/failure_text.dart';
+import 'package:field_crm/core/widgets/section.dart';
 import 'package:field_crm/features/auth/application/auth_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -77,16 +78,26 @@ class _LockScreenState extends ConsumerState<LockScreen> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Icon(Icons.lock_outline, size: 56),
-                  const SizedBox(height: 12),
+                  const Center(
+                    child: LeadingGlyph(icon: Icons.lock_outline, size: 72),
+                  ),
+                  const SizedBox(height: 16),
                   Text(
                     l.sessionLocked,
                     textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.titleMedium,
+                    style: Theme.of(context).textTheme.headlineSmall,
                   ),
-                  if (user != null)
-                    Text(user.email, textAlign: TextAlign.center),
-                  const SizedBox(height: 24),
+                  if (user != null) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      user.email,
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 32),
                   TextField(
                     controller: _password,
                     obscureText: true,

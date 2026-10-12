@@ -1,9 +1,11 @@
 import 'dart:async';
 
 import 'package:field_crm/app/env.dart';
+import 'package:field_crm/app/router.dart';
 import 'package:field_crm/core/result/failure.dart';
 import 'package:field_crm/core/result/result.dart';
 import 'package:field_crm/core/widgets/failure_text.dart';
+import 'package:field_crm/core/widgets/section.dart';
 import 'package:field_crm/features/auth/application/auth_controller.dart';
 import 'package:field_crm/features/auth/data/mock_auth_repository.dart';
 import 'package:flutter/material.dart';
@@ -92,18 +94,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Icon(
-                        Icons.handshake_outlined,
-                        size: 56,
-                        color: Theme.of(context).colorScheme.primary,
+                      const Center(
+                        child: LeadingGlyph(
+                          icon: Icons.handshake_outlined,
+                          size: 72,
+                        ),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 16),
                       Text(
                         AppEnv.appName,
                         textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.headlineSmall,
+                        style: Theme.of(context).textTheme.headlineMedium,
                       ),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 32),
                       TextFormField(
                         key: const Key('login_email'),
                         controller: _email,
@@ -126,6 +129,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         validator: (v) =>
                             (v == null || v.isEmpty) ? l.required : null,
                       ),
+                      const SizedBox(height: 4),
                       CheckboxListTile(
                         value: _remember,
                         onChanged: (v) => setState(() => _remember = v ?? true),
@@ -133,6 +137,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         controlAffinity: ListTileControlAffinity.leading,
                         contentPadding: EdgeInsets.zero,
                       ),
+                      const SizedBox(height: 4),
                       if (_error != null)
                         Padding(
                           padding: const EdgeInsets.only(bottom: 12),
@@ -156,6 +161,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               )
                             : Text(l.login),
                       ),
+                      TextButton(
+                        key: const Key('login_forgot'),
+                        onPressed: () =>
+                            const ForgotPasswordRoute().push<void>(context),
+                        child: Text(l.forgotPassword),
+                      ),
                       if (_canBiometric)
                         TextButton.icon(
                           onPressed: () => ref
@@ -170,7 +181,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           'dev: sita@fieldcrm.test / ram@fieldcrm.test / '
                           'maya@fieldcrm.test — password "password"',
                           textAlign: TextAlign.center,
-                          style: Theme.of(context).textTheme.bodySmall,
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurfaceVariant,
+                              ),
                         ),
                       ],
                     ],

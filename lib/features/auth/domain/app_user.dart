@@ -35,6 +35,10 @@ abstract class AppUser with _$AppUser {
     required Permissions permissions,
     @Default('UTC') String timezone,
     @Default(true) bool isActive,
+    String? phone,
+
+    /// Local file path of the profile photo (device-only in the mock).
+    String? avatarPath,
   }) = _AppUser;
 
   factory AppUser.fromJson(Map<String, dynamic> json) =>

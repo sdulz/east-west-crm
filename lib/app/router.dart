@@ -4,6 +4,7 @@ import 'package:field_crm/features/activities/domain/activity.dart';
 import 'package:field_crm/features/activities/presentation/activity_form_screen.dart';
 import 'package:field_crm/features/activities/presentation/follow_ups_screen.dart';
 import 'package:field_crm/features/auth/application/auth_controller.dart';
+import 'package:field_crm/features/auth/presentation/forgot_password_screen.dart';
 import 'package:field_crm/features/auth/presentation/lock_screen.dart';
 import 'package:field_crm/features/auth/presentation/login_screen.dart';
 import 'package:field_crm/features/auth/presentation/splash_screen.dart';
@@ -12,12 +13,18 @@ import 'package:field_crm/features/customers/presentation/customer_form_screen.d
 import 'package:field_crm/features/customers/presentation/customer_list_screen.dart';
 import 'package:field_crm/features/dashboard/presentation/home_screen.dart';
 import 'package:field_crm/features/history/presentation/history_timeline.dart';
+import 'package:field_crm/features/notifications/presentation/notifications_screen.dart';
 import 'package:field_crm/features/opportunities/presentation/opportunity_detail_screen.dart';
 import 'package:field_crm/features/opportunities/presentation/opportunity_form_screen.dart';
 import 'package:field_crm/features/opportunities/presentation/opportunity_list_screen.dart';
 import 'package:field_crm/features/pending/presentation/pending_center_screen.dart';
 import 'package:field_crm/features/pipeline/presentation/pipeline_screen.dart';
+import 'package:field_crm/features/profile/presentation/change_password_screen.dart';
+import 'package:field_crm/features/profile/presentation/profile_edit_screen.dart';
 import 'package:field_crm/features/profile/presentation/profile_screen.dart';
+import 'package:field_crm/features/quotations/presentation/quotation_detail_screen.dart';
+import 'package:field_crm/features/quotations/presentation/quotation_form_screen.dart';
+import 'package:field_crm/features/quotations/presentation/quotation_widgets.dart';
 import 'package:field_crm/features/search/presentation/search_screen.dart';
 import 'package:field_crm/features/team/presentation/team_screen.dart';
 import 'package:flutter/material.dart';
@@ -46,6 +53,57 @@ class LoginRoute extends GoRouteData with $LoginRoute {
       const LoginScreen();
 }
 
+@TypedGoRoute<ForgotPasswordRoute>(path: '/forgot-password')
+class ForgotPasswordRoute extends GoRouteData with $ForgotPasswordRoute {
+  const ForgotPasswordRoute();
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      const ForgotPasswordScreen();
+}
+
+@TypedGoRoute<ProfileEditRoute>(path: '/profile/edit')
+class ProfileEditRoute extends GoRouteData with $ProfileEditRoute {
+  const ProfileEditRoute();
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      const ProfileEditScreen();
+}
+
+@TypedGoRoute<ChangePasswordRoute>(path: '/profile/password')
+class ChangePasswordRoute extends GoRouteData with $ChangePasswordRoute {
+  const ChangePasswordRoute();
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      const ChangePasswordScreen();
+}
+
+@TypedGoRoute<QuotationNewRoute>(path: '/quotations/new')
+class QuotationNewRoute extends GoRouteData with $QuotationNewRoute {
+  const QuotationNewRoute({this.customerId, this.opportunityId});
+  final String? customerId;
+  final String? opportunityId;
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      QuotationFormScreen(customerId: customerId, opportunityId: opportunityId);
+}
+
+@TypedGoRoute<QuotationDetailRoute>(path: '/quotations/:id')
+class QuotationDetailRoute extends GoRouteData with $QuotationDetailRoute {
+  const QuotationDetailRoute({required this.id});
+  final String id;
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      QuotationDetailScreen(id: id);
+}
+
+@TypedGoRoute<PendingInvoicesRoute>(path: '/invoices')
+class PendingInvoicesRoute extends GoRouteData with $PendingInvoicesRoute {
+  const PendingInvoicesRoute();
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      const PendingInvoicesScreen();
+}
+
 @TypedGoRoute<LockRoute>(path: '/lock')
 class LockRoute extends GoRouteData with $LockRoute {
   const LockRoute();
@@ -59,6 +117,14 @@ class SearchRoute extends GoRouteData with $SearchRoute {
   @override
   Widget build(BuildContext context, GoRouterState state) =>
       const SearchScreen();
+}
+
+@TypedGoRoute<NotificationsRoute>(path: '/notifications')
+class NotificationsRoute extends GoRouteData with $NotificationsRoute {
+  const NotificationsRoute();
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      const NotificationsScreen();
 }
 
 @TypedGoRoute<PendingRoute>(path: '/pending')
@@ -147,6 +213,14 @@ class OpportunityNewRoute extends GoRouteData with $OpportunityNewRoute {
   @override
   Widget build(BuildContext context, GoRouterState state) =>
       OpportunityFormScreen(customerId: customerId);
+}
+
+@TypedGoRoute<OpportunityListRoute>(path: '/opportunities/list')
+class OpportunityListRoute extends GoRouteData with $OpportunityListRoute {
+  const OpportunityListRoute();
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      const OpportunityListScreen();
 }
 
 @TypedGoRoute<PipelineRoute>(path: '/opportunities/pipeline')
@@ -248,7 +322,7 @@ class CrmRoute extends GoRouteData with $CrmRoute {
   const CrmRoute();
   @override
   Widget build(BuildContext context, GoRouterState state) =>
-      const OpportunityListScreen();
+      const PipelineScreen();
 }
 
 class TasksRoute extends GoRouteData with $TasksRoute {
@@ -289,7 +363,9 @@ GoRouter router(Ref ref) {
         return at == '/splash' ? null : '/splash';
       }
       final loggedIn = auth.value != null;
-      if (!loggedIn) return at == '/login' ? null : '/login';
+      if (!loggedIn) {
+        return at == '/login' || at == '/forgot-password' ? null : '/login';
+      }
       if (locked) return at == '/lock' ? null : '/lock';
       if (at == '/login' || at == '/splash' || at == '/lock') return '/home';
       return null;

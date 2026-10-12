@@ -9,6 +9,7 @@ import '../helpers/test_app.dart';
 void main() {
   testWidgets('TC-03 allowed and rejected stage transitions', (tester) async {
     final h = await TestHarness.create();
+    addTearDown(h.dispose);
     await pumpApp(tester, h);
     await login(tester);
     await pumpUntilFound(tester, find.byType(HomeScreen));
@@ -16,11 +17,15 @@ void main() {
       (o) => o.ownerId == 'u-sita' && o.stageId == 's-new',
     );
     await tester.tap(find.text('CRM'));
+    await pumpUntilFound(tester, find.byKey(const Key('open_list')));
+    await tester.tap(find.byKey(const Key('open_list')));
     await pumpUntilFound(tester, find.byType(OpportunityRow));
     await tester.scrollUntilVisible(
       find.byKey(Key('opportunity_${o.id}')),
       200,
     );
+    await tester.ensureVisible(find.byKey(Key('opportunity_${o.id}')));
+    await tester.pump();
     await tester.tap(find.byKey(Key('opportunity_${o.id}')));
     await pumpUntilFound(tester, find.byType(OpportunityDetailScreen));
     await pumpUntilFound(tester, find.byKey(const Key('stage_picker')));
@@ -49,13 +54,13 @@ void main() {
     await tester.tap(find.byKey(const Key('stage_option_s-proposal')));
     await pumpUntilFound(tester, find.textContaining('not allowed'));
     await finish(tester);
-    await h.dispose();
   });
 
   testWidgets('TC-03 handover shows the owner confirmed by the repository', (
     tester,
   ) async {
     final h = await TestHarness.create();
+    addTearDown(h.dispose);
     await pumpApp(tester, h);
     await login(tester, email: 'maya@fieldcrm.test');
     await pumpUntilFound(tester, find.byType(HomeScreen));
@@ -63,11 +68,15 @@ void main() {
       (o) => o.ownerId == 'u-sita',
     );
     await tester.tap(find.text('CRM'));
+    await pumpUntilFound(tester, find.byKey(const Key('open_list')));
+    await tester.tap(find.byKey(const Key('open_list')));
     await pumpUntilFound(tester, find.byType(OpportunityRow));
     await tester.scrollUntilVisible(
       find.byKey(Key('opportunity_${o.id}')),
       200,
     );
+    await tester.ensureVisible(find.byKey(Key('opportunity_${o.id}')));
+    await tester.pump();
     await tester.tap(find.byKey(Key('opportunity_${o.id}')));
     await pumpUntilFound(tester, find.byKey(const Key('handover_button')));
     await tester.tap(find.byKey(const Key('handover_button')));
@@ -88,11 +97,11 @@ void main() {
       'u-ram',
     );
     await finish(tester);
-    await h.dispose();
   });
 
   testWidgets('salesperson cannot see the handover button', (tester) async {
     final h = await TestHarness.create();
+    addTearDown(h.dispose);
     await pumpApp(tester, h);
     await login(tester);
     await pumpUntilFound(tester, find.byType(HomeScreen));
@@ -100,15 +109,18 @@ void main() {
       (o) => o.ownerId == 'u-sita',
     );
     await tester.tap(find.text('CRM'));
+    await pumpUntilFound(tester, find.byKey(const Key('open_list')));
+    await tester.tap(find.byKey(const Key('open_list')));
     await pumpUntilFound(tester, find.byType(OpportunityRow));
     await tester.scrollUntilVisible(
       find.byKey(Key('opportunity_${o.id}')),
       200,
     );
+    await tester.ensureVisible(find.byKey(Key('opportunity_${o.id}')));
+    await tester.pump();
     await tester.tap(find.byKey(Key('opportunity_${o.id}')));
     await pumpUntilFound(tester, find.byKey(const Key('owner_field')));
     expect(find.byKey(const Key('handover_button')), findsNothing);
     await finish(tester);
-    await h.dispose();
   });
 }

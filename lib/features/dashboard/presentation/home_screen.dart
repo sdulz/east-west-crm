@@ -1,14 +1,18 @@
 import 'dart:async';
 
+import 'package:field_crm/app/providers.dart';
 import 'package:field_crm/app/router.dart';
 import 'package:field_crm/core/format/app_formatters.dart';
 import 'package:field_crm/core/widgets/async_view.dart';
 import 'package:field_crm/core/widgets/failure_text.dart';
+import 'package:field_crm/core/widgets/section.dart';
 import 'package:field_crm/features/activities/application/reminder_sync.dart';
 import 'package:field_crm/features/activities/presentation/activity_tile.dart';
 import 'package:field_crm/features/auth/application/auth_controller.dart';
 import 'package:field_crm/features/dashboard/application/dashboard_controller.dart';
 import 'package:field_crm/features/dashboard/domain/dashboard_summary.dart';
+import 'package:field_crm/features/dashboard/presentation/dashboard_charts.dart';
+import 'package:field_crm/features/notifications/application/notification_controllers.dart';
 import 'package:field_crm/features/opportunities/application/assignment_watcher.dart';
 import 'package:field_crm/features/opportunities/application/opportunity_controllers.dart';
 import 'package:field_crm/features/opportunities/domain/opportunity.dart';
@@ -35,6 +39,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final summary = ref.watch(dashboardControllerProvider);
     final newlyAssigned = ref.watch(assignmentWatcherProvider);
     final pendingCount = ref.watch(pendingCountProvider);
+    final unread = ref.watch(unreadNotificationCountProvider);
+    final user = ref.watch(currentUserProvider);
+    final f = ref.watch(formattersProvider);
+    final theme = Theme.of(context);
 
     // FR-MOB-012: (re)schedule reminders on every refresh.
     ref.listen(dashboardControllerProvider, (_, next) {
@@ -63,12 +71,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(l.navHome),
+        title: Text(
+          user == null ? l.navHome : l.homeGreeting(user.name.split(' ').first),
+        ),
         actions: [
           IconButton(
             tooltip: l.search,
             icon: const Icon(Icons.search),
             onPressed: () => const SearchRoute().push<void>(context),
+          ),
+          IconButton(
+            key: const Key('home_notifications'),
+            tooltip: l.notifications,
+            icon: Badge.count(
+              count: unread,
+              isLabelVisible: unread > 0,
+              child: const Icon(Icons.notifications_outlined),
+            ),
+            onPressed: () => const NotificationsRoute().push<void>(context),
           ),
           if (pendingCount > 0)
             IconButton(
@@ -88,58 +108,66 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           value: summary,
           onRetry: () => ref.invalidate(dashboardControllerProvider),
           data: (s) => ListView(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 96),
             children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(4, 0, 4, 16),
+                child: Text(
+                  f.date(ref.read(clockProvider).now()),
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
               if (newlyAssigned.isNotEmpty)
                 _AssignmentBanner(items: newlyAssigned),
-              GridView.count(
-                crossAxisCount: MediaQuery.sizeOf(context).width >= 600 ? 4 : 2,
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                mainAxisSpacing: 12,
-                crossAxisSpacing: 12,
-                childAspectRatio: 1.6,
-                children: [
-                  _CountCard(
-                    label: l.today,
-                    count: s.today.length,
-                    icon: Icons.today,
-                    selected: _selected == _Group.today,
-                    onTap: () => setState(() => _selected = _Group.today),
-                  ),
-                  _CountCard(
-                    label: l.upcoming,
-                    count: s.upcoming.length,
-                    icon: Icons.upcoming,
-                    selected: _selected == _Group.upcoming,
-                    onTap: () => setState(() => _selected = _Group.upcoming),
-                  ),
-                  _CountCard(
-                    label: l.overdue,
-                    count: s.overdue.length,
-                    icon: Icons.warning_amber,
-                    selected: _selected == _Group.overdue,
-                    color: Theme.of(context).colorScheme.error,
-                    onTap: () => setState(() => _selected = _Group.overdue),
-                  ),
-                  _CountCard(
-                    label: l.noFollowUp,
-                    count: s.noFollowUp.length,
-                    icon: Icons.help_outline,
-                    selected: _selected == _Group.noFollowUp,
-                    onTap: () => setState(() => _selected = _Group.noFollowUp),
-                  ),
-                ],
+              Panel(
+                padding: const EdgeInsets.all(4),
+                child: Row(
+                  children: [
+                    _StatCell(
+                      label: l.today,
+                      count: s.today.length,
+                      selected: _selected == _Group.today,
+                      onTap: () => setState(() => _selected = _Group.today),
+                    ),
+                    _StatCell(
+                      label: l.upcoming,
+                      count: s.upcoming.length,
+                      selected: _selected == _Group.upcoming,
+                      onTap: () => setState(() => _selected = _Group.upcoming),
+                    ),
+                    _StatCell(
+                      label: l.overdue,
+                      count: s.overdue.length,
+                      selected: _selected == _Group.overdue,
+                      danger: s.overdue.isNotEmpty,
+                      onTap: () => setState(() => _selected = _Group.overdue),
+                    ),
+                    _StatCell(
+                      label: l.noFollowUp,
+                      count: s.noFollowUp.length,
+                      selected: _selected == _Group.noFollowUp,
+                      onTap: () =>
+                          setState(() => _selected = _Group.noFollowUp),
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(height: 16),
-              Text(switch (_selected) {
+              SectionHeader(switch (_selected) {
                 _Group.today => l.today,
                 _Group.upcoming => l.upcoming,
                 _Group.overdue => l.overdue,
                 _Group.noFollowUp => l.noFollowUp,
-              }, style: Theme.of(context).textTheme.titleMedium),
-              const SizedBox(height: 8),
-              ..._groupItems(s),
+              }),
+              Panel(child: Column(children: _groupItems(s))),
+              SectionHeader(l.pipeline),
+              const PipelineCard(),
+              SectionHeader(l.activities),
+              const WeekActivityCard(),
+              SectionHeader(l.invoices),
+              const InvoicesCard(),
+              const SizedBox(height: 80),
             ],
           ),
         ),
@@ -149,8 +177,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   List<Widget> _groupItems(DashboardSummary s) {
     final l = context.l10n;
+    final empty = [
+      Padding(padding: const EdgeInsets.all(16), child: Text(l.emptyList)),
+    ];
     if (_selected == _Group.noFollowUp) {
-      if (s.noFollowUp.isEmpty) return [Text(l.emptyList)];
+      if (s.noFollowUp.isEmpty) return empty;
       return s.noFollowUp.map(_OpportunityRow.new).toList();
     }
     final items = switch (_selected) {
@@ -158,52 +189,75 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       _Group.upcoming => s.upcoming,
       _ => s.overdue,
     };
-    if (items.isEmpty) return [Text(l.emptyList)];
+    if (items.isEmpty) return empty;
     return items.map((a) => ActivityTile(activity: a)).toList();
   }
 }
 
-class _CountCard extends StatelessWidget {
-  const _CountCard({
+/// One cell of the stat strip: count over label, tonal when selected.
+class _StatCell extends StatelessWidget {
+  const _StatCell({
     required this.label,
     required this.count,
-    required this.icon,
     required this.selected,
     required this.onTap,
-    this.color,
+    this.danger = false,
   });
   final String label;
   final int count;
-  final IconData icon;
   final bool selected;
+  final bool danger;
   final VoidCallback onTap;
-  final Color? color;
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Card(
-      color: selected ? scheme.primaryContainer : null,
-      child: InkWell(
-        onTap: onTap,
-        child: Semantics(
-          button: true,
-          label: context.l10n.dashboardCountCard(label, count),
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Icon(icon, color: color),
-                FittedBox(
-                  child: Text(
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final bg = !selected
+        ? Colors.transparent
+        : danger
+        ? scheme.errorContainer
+        : scheme.primaryContainer;
+    final fg = danger
+        ? scheme.error
+        : selected
+        ? scheme.onPrimaryContainer
+        : scheme.onSurface;
+    final muted = selected && !danger
+        ? scheme.onPrimaryContainer
+        : scheme.onSurfaceVariant;
+    return Expanded(
+      child: Material(
+        color: bg,
+        borderRadius: BorderRadius.circular(12),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: Semantics(
+            button: true,
+            selected: selected,
+            label: context.l10n.dashboardCountCard(label, count),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+              child: Column(
+                children: [
+                  Text(
                     '$count',
-                    style: Theme.of(context).textTheme.headlineMedium,
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      color: fg,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
-                ),
-                Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
-              ],
+                  const SizedBox(height: 2),
+                  Text(
+                    label,
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.labelMedium?.copyWith(color: muted),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -220,7 +274,7 @@ class _OpportunityRow extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final f = ref.watch(formattersProvider);
     return ListTile(
-      leading: const Icon(Icons.work_outline),
+      leading: const LeadingGlyph(icon: Icons.work_outline),
       title: Text(o.title),
       subtitle: Text(f.money(o.expectedRevenue)),
       onTap: () => OpportunityDetailRoute(id: o.id).push<void>(context),

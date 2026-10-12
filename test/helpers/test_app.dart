@@ -101,6 +101,8 @@ class TestHarness {
     child: const FieldCrmApp(),
   );
 
+  /// Register with `addTearDown`: closing the database inside a
+  /// `testWidgets` body never completes (fake-async zone).
   Future<void> dispose() async {
     container.dispose();
     await db.close();
@@ -141,7 +143,12 @@ Future<void> pumpUntilFound(
   final end = DateTime.now().add(timeout);
   while (DateTime.now().isBefore(end)) {
     await tester.pump(const Duration(milliseconds: 50));
-    if (finder.evaluate().isNotEmpty) return;
+    if (finder.evaluate().isNotEmpty) {
+      // The widget exists from the first frame of a route / sheet / menu
+      // transition, while it is still sliding in off-screen. Let it land.
+      await tester.pump(const Duration(milliseconds: 400));
+      return;
+    }
   }
   throw TestFailure('Timed out waiting for $finder');
 }

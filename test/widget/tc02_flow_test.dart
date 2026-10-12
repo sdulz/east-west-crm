@@ -12,6 +12,7 @@ void main() {
     (tester) async {
       final now = DateTime.now().toUtc();
       final h = await TestHarness.create(now: now);
+      addTearDown(h.dispose);
       await pumpApp(tester, h);
       await login(tester);
       await pumpUntilFound(tester, find.byType(HomeScreen));
@@ -32,6 +33,7 @@ void main() {
       await pumpUntilFound(tester, find.byKey(const Key('quick_interaction')));
       await tester.tap(find.byKey(const Key('quick_interaction')));
       await pumpUntilFound(tester, find.byKey(const Key('activity_summary')));
+      final before = h.store.state.activities.map((a) => a.id).toSet();
       await tester.enterText(
         find.byKey(const Key('activity_summary')),
         'Intro call',
@@ -44,7 +46,7 @@ void main() {
       await pumpUntilFound(tester, find.text('Saved'));
       await pumpUntilFound(tester, find.byType(CustomerDetailScreen));
       final logged = h.store.state.activities.where(
-        (a) => a.summary == 'Intro call',
+        (a) => !before.contains(a.id),
       );
       expect(logged.single.state, ActivityState.done);
       expect(logged.single.relatedId, 'c-001');
@@ -74,6 +76,7 @@ void main() {
 
       // Appears on the dashboard (Today or Overdue depending on wall clock).
       await tester.tap(find.byTooltip('Back'));
+      await tester.pump(const Duration(milliseconds: 400)); // pop animation
       await tester.tap(find.byTooltip('Back'));
       await pumpUntilFound(tester, find.byType(HomeScreen));
       await tester.drag(find.byType(RefreshIndicator), const Offset(0, 300));
@@ -95,7 +98,6 @@ void main() {
         );
       }
       await finish(tester);
-      await h.dispose();
     },
   );
 }

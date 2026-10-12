@@ -1,6 +1,7 @@
 import 'package:field_crm/app/router.dart';
 import 'package:field_crm/core/widgets/async_view.dart';
 import 'package:field_crm/core/widgets/failure_text.dart';
+import 'package:field_crm/core/widgets/section.dart';
 import 'package:field_crm/features/customers/domain/customer.dart';
 import 'package:field_crm/features/search/application/search_controller.dart';
 import 'package:field_crm/features/search/domain/search_results.dart';
@@ -23,8 +24,13 @@ class SearchScreen extends ConsumerWidget {
           autofocus: true,
           decoration: InputDecoration(
             hintText: l.searchHint,
+            filled: false,
             border: InputBorder.none,
+            focusedBorder: InputBorder.none,
+            enabledBorder: InputBorder.none,
+            contentPadding: EdgeInsets.zero,
           ),
+          style: Theme.of(context).textTheme.titleMedium,
           textInputAction: TextInputAction.search,
           onChanged: ctrl.setQuery,
         ),
@@ -35,6 +41,7 @@ class SearchScreen extends ConsumerWidget {
         isEmpty: (r) => r.isEmpty && ctrl.query.trim().isNotEmpty,
         emptyMessage: l.searchNoResults(ctrl.query),
         data: (r) => ListView(
+          padding: const EdgeInsets.fromLTRB(8, 0, 8, 24),
           children: [
             if (r.customers.isNotEmpty) ...[
               _Header(l.searchCustomers),
@@ -48,7 +55,7 @@ class SearchScreen extends ConsumerWidget {
               _Header(l.searchOpportunities),
               ...r.opportunities.map(
                 (o) => ListTile(
-                  leading: const Icon(Icons.work_outline),
+                  leading: const LeadingGlyph(icon: Icons.work_outline),
                   title: Text(o.title),
                   onTap: () =>
                       OpportunityDetailRoute(id: o.id).push<void>(context),
@@ -67,8 +74,8 @@ class _Header extends StatelessWidget {
   final String text;
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-    child: Text(text, style: Theme.of(context).textTheme.labelLarge),
+    padding: const EdgeInsets.symmetric(horizontal: 12),
+    child: SectionHeader(text),
   );
 }
 
@@ -77,7 +84,10 @@ class _CustomerRow extends StatelessWidget {
   final Customer c;
   @override
   Widget build(BuildContext context) => ListTile(
-    leading: Icon(c.isCompany ? Icons.business : Icons.person_outline),
+    leading: LeadingGlyph(
+      icon: c.isCompany ? Icons.business : null,
+      text: c.isCompany ? null : c.name[0],
+    ),
     title: Text(c.name),
     subtitle: Text([c.phone, c.email].whereType<String>().join(' · ')),
     onTap: () => CustomerDetailRoute(id: c.id).push<void>(context),

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Key/value row used on detail screens.
+/// Label over value, used on detail screens (usually inside a Panel).
 class LabeledField extends StatelessWidget {
   const LabeledField({
     required this.label,
@@ -14,15 +14,27 @@ class LabeledField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final t = Theme.of(context).textTheme;
+    final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.fromLTRB(16, 10, 8, 10),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(width: 120, child: Text(label, style: t.labelMedium)),
-          Expanded(child: Text(value, style: t.bodyLarge)),
-          ?trailing,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(value, style: theme.textTheme.bodyLarge),
+              ],
+            ),
+          ),
+          trailing ?? const SizedBox(width: 8),
         ],
       ),
     );

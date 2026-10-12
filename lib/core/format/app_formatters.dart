@@ -27,6 +27,9 @@ class AppFormatters {
   String time(DateTime utc) =>
       DateFormat.jm(locale).format(inZone(utc, timezone));
 
+  String weekday(DateTime utc) =>
+      DateFormat.E(locale).format(inZone(utc, timezone));
+
   String weekdayTime(DateTime utc) =>
       DateFormat.E(locale).add_jm().format(inZone(utc, timezone));
 }

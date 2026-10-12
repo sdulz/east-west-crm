@@ -22,6 +22,9 @@ abstract class Activity with _$Activity {
     @Default(ActivityState.planned) ActivityState state,
     String? outcome,
     DateTime? dueAt,
+
+    /// Local file paths (device-only in the mock).
+    @Default(<String>[]) List<String> attachments,
   }) = _Activity;
 
   factory Activity.fromJson(Map<String, dynamic> json) =>

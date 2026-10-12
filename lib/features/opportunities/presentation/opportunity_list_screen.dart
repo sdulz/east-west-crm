@@ -4,6 +4,7 @@ import 'package:field_crm/core/widgets/async_view.dart';
 import 'package:field_crm/core/widgets/failure_text.dart';
 import 'package:field_crm/core/widgets/list_detail_layout.dart';
 import 'package:field_crm/core/widgets/pending_badge.dart';
+import 'package:field_crm/core/widgets/section.dart';
 import 'package:field_crm/features/auth/application/auth_controller.dart';
 import 'package:field_crm/features/customers/application/customer_controllers.dart';
 import 'package:field_crm/features/handover/application/user_directory_controllers.dart';
@@ -59,6 +60,7 @@ class _OpportunityListScreenState extends ConsumerState<OpportunityListScreen> {
             onRetry: () => ref.invalidate(opportunityListProvider()),
             isEmpty: (v) => v.isEmpty,
             data: (items) => ListView.builder(
+              padding: const EdgeInsets.fromLTRB(8, 4, 8, 96),
               itemCount: items.length,
               itemBuilder: (_, i) => OpportunityRow(
                 o: items[i],
@@ -99,7 +101,7 @@ class OpportunityRow extends ConsumerWidget {
     return ListTile(
       key: Key('opportunity_${o.id}'),
       selected: selected,
-      leading: const Icon(Icons.work_outline),
+      leading: const LeadingGlyph(icon: Icons.work_outline),
       title: Text(o.title),
       subtitle: Text(
         [

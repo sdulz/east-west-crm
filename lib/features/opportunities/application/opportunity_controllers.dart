@@ -8,8 +8,8 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'opportunity_controllers.g.dart';
 
-/// FR-MOB-005.
-@riverpod
+/// FR-MOB-005. Kept alive: tab switches must not refetch.
+@Riverpod(keepAlive: true)
 Future<List<Opportunity>> opportunityList(Ref ref, {String? customerId}) {
   ref
     ..watch(refreshTickProvider)
@@ -20,13 +20,13 @@ Future<List<Opportunity>> opportunityList(Ref ref, {String? customerId}) {
       .orThrow;
 }
 
-@riverpod
+@Riverpod(keepAlive: true)
 Future<Opportunity> opportunityDetail(Ref ref, String id) {
   ref.watch(refreshTickProvider);
   return ref.watch(opportunityRepositoryProvider).getById(id).orThrow;
 }
 
-@riverpod
+@Riverpod(keepAlive: true)
 class OpportunitySaver extends _$OpportunitySaver {
   @override
   void build() {}

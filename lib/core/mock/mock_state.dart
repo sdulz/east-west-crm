@@ -2,8 +2,10 @@ import 'package:field_crm/features/activities/domain/activity.dart';
 import 'package:field_crm/features/auth/domain/app_user.dart';
 import 'package:field_crm/features/customers/domain/customer.dart';
 import 'package:field_crm/features/history/domain/history_entry.dart';
+import 'package:field_crm/features/notifications/domain/app_notification.dart';
 import 'package:field_crm/features/opportunities/domain/opportunity.dart';
 import 'package:field_crm/features/pipeline/domain/pipeline_stage.dart';
+import 'package:field_crm/features/quotations/domain/quotation.dart';
 import 'package:field_crm/features/team/domain/team.dart';
 
 /// The whole in-memory "server". Serialisable so the mock survives restarts.
@@ -19,7 +21,17 @@ class MockState {
     required this.activities,
     required this.history,
     Map<String, String>? sessions,
-  }) : sessions = sessions ?? {};
+    Map<String, String>? passwordResets,
+    List<Quotation>? quotations,
+    List<Invoice>? invoices,
+    List<Product>? products,
+    List<AppNotification>? notifications,
+  }) : sessions = sessions ?? {},
+       passwordResets = passwordResets ?? {},
+       quotations = quotations ?? [],
+       invoices = invoices ?? [],
+       products = products ?? [],
+       notifications = notifications ?? [];
 
   factory MockState.fromJson(Map<String, dynamic> j) => MockState(
     users: listFromJson(j['users'], AppUser.fromJson),
@@ -34,6 +46,11 @@ class MockState {
       (k, v) => MapEntry(k, listFromJson(v, HistoryEntry.fromJson)),
     ),
     sessions: Map<String, String>.from(j['sessions'] as Map? ?? {}),
+    passwordResets: Map<String, String>.from(j['passwordResets'] as Map? ?? {}),
+    quotations: listFromJson(j['quotations'], Quotation.fromJson),
+    invoices: listFromJson(j['invoices'], Invoice.fromJson),
+    products: listFromJson(j['products'], Product.fromJson),
+    notifications: listFromJson(j['notifications'], AppNotification.fromJson),
   );
 
   final List<AppUser> users;
@@ -51,6 +68,13 @@ class MockState {
   /// token -> userId
   final Map<String, String> sessions;
 
+  /// email -> one-time reset code
+  final Map<String, String> passwordResets;
+  final List<Quotation> quotations;
+  final List<Invoice> invoices;
+  final List<Product> products;
+  final List<AppNotification> notifications;
+
   Map<String, dynamic> toJson() => {
     'users': users.map((e) => e.toJson()).toList(),
     'passwords': passwords,
@@ -64,6 +88,11 @@ class MockState {
       (k, v) => MapEntry(k, v.map((e) => e.toJson()).toList()),
     ),
     'sessions': sessions,
+    'passwordResets': passwordResets,
+    'quotations': quotations.map((e) => e.toJson()).toList(),
+    'invoices': invoices.map((e) => e.toJson()).toList(),
+    'products': products.map((e) => e.toJson()).toList(),
+    'notifications': notifications.map((e) => e.toJson()).toList(),
   };
 
   static List<T> listFromJson<T>(

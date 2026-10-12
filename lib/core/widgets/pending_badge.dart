@@ -18,21 +18,30 @@ class PendingBadge extends ConsumerWidget {
     final l = context.l10n;
     final failed = status == PendingStatus.failed;
     final scheme = Theme.of(context).colorScheme;
+    final fg = failed ? scheme.onErrorContainer : scheme.onTertiaryContainer;
     return Semantics(
       label: failed ? l.failed : l.pending,
-      child: Chip(
-        visualDensity: VisualDensity.compact,
-        avatar: Icon(
-          failed ? Icons.error_outline : Icons.schedule,
-          size: 16,
-          color: failed ? scheme.onErrorContainer : scheme.onTertiaryContainer,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: failed ? scheme.errorContainer : scheme.tertiaryContainer,
+          borderRadius: BorderRadius.circular(999),
         ),
-        label: Text(failed ? l.failed : l.pending),
-        backgroundColor: failed
-            ? scheme.errorContainer
-            : scheme.tertiaryContainer,
-        labelStyle: TextStyle(
-          color: failed ? scheme.onErrorContainer : scheme.onTertiaryContainer,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              failed ? Icons.error_outline : Icons.schedule,
+              size: 14,
+              color: fg,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              failed ? l.failed : l.pending,
+              style: Theme.of(context).textTheme.labelSmall
+                  ?.copyWith(color: fg, fontWeight: FontWeight.w600),
+            ),
+          ],
         ),
       ),
     );

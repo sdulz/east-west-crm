@@ -6,6 +6,7 @@ import 'package:field_crm/core/result/result.dart';
 import 'package:field_crm/features/activities/domain/activity.dart';
 import 'package:field_crm/features/activities/domain/activity_repository.dart';
 import 'package:field_crm/features/history/domain/history_entry.dart';
+import 'package:field_crm/features/notifications/domain/app_notification.dart';
 
 class MockActivityRepository implements ActivityRepository {
   MockActivityRepository(this.store);
@@ -76,6 +77,20 @@ class MockActivityRepository implements ActivityRepository {
       updatedAt: store.clock.now(),
     );
     _all.add(saved);
+    if (a.type == ActivityType.note) {
+      for (final u in store.state.users) {
+        if (saved.summary.contains('@${u.name}')) {
+          store.notify(
+            userId: u.id,
+            kind: NotificationKind.mention,
+            title: '${me.name} mentioned you',
+            body: saved.summary,
+            relatedType: saved.relatedType,
+            relatedId: saved.relatedId,
+          );
+        }
+      }
+    }
     if (!isFollowUp) {
       _addHistory(
         saved,

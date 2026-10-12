@@ -1,7 +1,11 @@
+import 'dart:math';
+
 import 'package:field_crm/core/mock/mock_store.dart';
+import 'package:field_crm/core/mock/mock_validation.dart';
 import 'package:field_crm/core/result/failure.dart';
 import 'package:field_crm/core/result/result.dart';
 import 'package:field_crm/core/uuid.dart';
+import 'package:field_crm/features/auth/domain/app_user.dart';
 import 'package:field_crm/features/auth/domain/auth_repository.dart';
 import 'package:field_crm/features/auth/domain/session.dart';
 
@@ -48,4 +52,78 @@ class MockAuthRepository implements AuthRepository {
     store.state.sessions.remove(token);
     store.setCurrentUser(null);
   }, write: true);
+
+  @override
+  Future<Result<AppUser, Failure>> updateProfile({
+    required String name,
+    String? phone,
+    String? avatarPath,
+  }) => store.call(() {
+    final me = store.currentUser;
+    MockValidation.required(name, 'name', 'Name');
+    MockValidation.phone(phone);
+    final i = store.state.users.indexWhere((u) => u.id == me.id);
+    final saved = me.copyWith(
+      name: name.trim(),
+      phone: phone,
+      avatarPath: avatarPath,
+    );
+    store.state.users[i] = saved;
+    return saved;
+  }, write: true);
+
+  @override
+  Future<Result<void, Failure>> changePassword({
+    required String current,
+    required String next,
+  }) => store.call(() {
+    final me = store.currentUser;
+    if (store.state.passwords[me.email] != current) {
+      throw const MockFailure(
+        Failure.validation('Current password is wrong', field: 'current'),
+      );
+    }
+    _checkNewPassword(next);
+    store.state.passwords[me.email] = next;
+  }, write: true);
+
+  @override
+  Future<Result<String?, Failure>> requestPasswordReset(String email) =>
+      store.call(() {
+        final user = store.state.users
+            .where((u) => u.email.toLowerCase() == email.trim().toLowerCase())
+            .firstOrNull;
+        if (user == null) return null; // never reveal whether an email exists
+        final code = (100000 + Random().nextInt(900000)).toString();
+        store.state.passwordResets[user.email] = code;
+        return code;
+      }, write: true);
+
+  @override
+  Future<Result<void, Failure>> resetPassword({
+    required String email,
+    required String code,
+    required String newPassword,
+  }) => store.call(() {
+    final key = store.state.users
+        .where((u) => u.email.toLowerCase() == email.trim().toLowerCase())
+        .firstOrNull
+        ?.email;
+    if (key == null || store.state.passwordResets[key] != code.trim()) {
+      throw const MockFailure(
+        Failure.validation('invalid_code', field: 'code'),
+      );
+    }
+    _checkNewPassword(newPassword);
+    store.state.passwords[key] = newPassword;
+    store.state.passwordResets.remove(key);
+  }, write: true);
+
+  static void _checkNewPassword(String v) {
+    if (v.length < 8) {
+      throw const MockFailure(
+        Failure.validation('Use at least 8 characters', field: 'next'),
+      );
+    }
+  }
 }

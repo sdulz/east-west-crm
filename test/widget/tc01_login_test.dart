@@ -11,6 +11,7 @@ void main() {
     tester,
   ) async {
     final h = await TestHarness.create();
+    addTearDown(h.dispose);
     await pumpApp(tester, h);
     await login(tester, password: 'wrong');
     await pumpUntilFound(tester, find.byKey(const Key('login_error')));
@@ -22,15 +23,17 @@ void main() {
       find.text('This account is inactive. Contact your supervisor.'),
     );
     await finish(tester);
-    await h.dispose();
   });
 
   testWidgets('TC-01 salesperson sees only own records', (tester) async {
     final h = await TestHarness.create();
+    addTearDown(h.dispose);
     await pumpApp(tester, h);
     await login(tester);
     await pumpUntilFound(tester, find.byType(HomeScreen));
     await tester.tap(find.text('CRM'));
+    await pumpUntilFound(tester, find.byKey(const Key('open_list')));
+    await tester.tap(find.byKey(const Key('open_list')));
     await pumpUntilFound(tester, find.byType(OpportunityRow));
     final mine = h.store.state.opportunities.where(
       (o) => o.ownerId == 'u-sita',
@@ -48,15 +51,17 @@ void main() {
     // Remember-me stored the token in secure storage only.
     expect(h.secure.values['session_token'], isNotNull);
     await finish(tester);
-    await h.dispose();
   });
 
   testWidgets('TC-01 supervisor sees the team', (tester) async {
     final h = await TestHarness.create();
+    addTearDown(h.dispose);
     await pumpApp(tester, h);
     await login(tester, email: 'maya@fieldcrm.test');
     await pumpUntilFound(tester, find.byType(HomeScreen));
     await tester.tap(find.text('CRM'));
+    await pumpUntilFound(tester, find.byKey(const Key('open_list')));
+    await tester.tap(find.byKey(const Key('open_list')));
     await pumpUntilFound(tester, find.byType(OpportunityRow));
     final owners = tester
         .widgetList<OpportunityRow>(find.byType(OpportunityRow))
@@ -64,13 +69,13 @@ void main() {
         .toSet();
     expect(owners, {'u-sita', 'u-ram'});
     await finish(tester);
-    await h.dispose();
   });
 
   testWidgets('TC-01 logout warns about pending items and wipes the queue', (
     tester,
   ) async {
     final h = await TestHarness.create();
+    addTearDown(h.dispose);
     await pumpApp(tester, h);
     await login(tester);
     await pumpUntilFound(tester, find.byType(HomeScreen));
@@ -90,6 +95,8 @@ void main() {
     expect(c, isNotNull);
     await tester.tap(find.text('Profile'));
     await pumpUntilFound(tester, find.byKey(const Key('profile_logout')));
+    await tester.ensureVisible(find.byKey(const Key('profile_logout')));
+    await tester.pump();
     await tester.tap(find.byKey(const Key('profile_logout')));
     await pumpUntilFound(
       tester,
@@ -103,6 +110,5 @@ void main() {
     );
     expect(h.secure.values['session_token'], isNull);
     await finish(tester);
-    await h.dispose();
   });
 }

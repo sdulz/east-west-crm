@@ -3,6 +3,7 @@ import 'package:field_crm/core/format/app_formatters.dart';
 import 'package:field_crm/core/l10n/generated/app_localizations.dart';
 import 'package:field_crm/core/widgets/async_view.dart';
 import 'package:field_crm/core/widgets/failure_text.dart';
+import 'package:field_crm/core/widgets/section.dart';
 import 'package:field_crm/features/pending/application/pending_queue_controller.dart';
 import 'package:field_crm/features/pending/domain/pending_write.dart';
 import 'package:flutter/material.dart';
@@ -99,23 +100,33 @@ class _PendingCenterScreenState extends ConsumerState<PendingCenterScreen> {
         onRetry: () => ref.invalidate(pendingQueueControllerProvider),
         isEmpty: (v) => v.isEmpty,
         emptyMessage: l.pendingEmpty,
-        data: (items) => ListView.separated(
+        data: (items) => ListView.builder(
+          padding: const EdgeInsets.fromLTRB(8, 4, 8, 24),
           itemCount: items.length,
-          separatorBuilder: (_, _) => const Divider(height: 1),
           itemBuilder: (_, i) {
             final w = items[i];
             final failed = w.status == PendingStatus.failed;
             final scheme = Theme.of(context).colorScheme;
             return ListTile(
               key: Key('pending_${w.id}'),
-              leading: Icon(
-                failed ? Icons.error_outline : Icons.schedule,
-                color: failed ? scheme.error : null,
+              leading: LeadingGlyph(
+                icon: failed ? Icons.error_outline : Icons.schedule,
+                color: failed ? scheme.error : scheme.tertiary,
               ),
-              title: Text(w.label.isEmpty ? w.operation.name : w.label),
+              title: Row(
+                children: [
+                  Expanded(
+                    child: Text(w.label.isEmpty ? w.operation.name : w.label),
+                  ),
+                  const SizedBox(width: 8),
+                  StatusPill(
+                    text: failed ? l.failed : l.pending,
+                    color: failed ? scheme.error : scheme.tertiary,
+                  ),
+                ],
+              ),
               subtitle: Text(
                 [
-                  if (failed) l.failed else l.pending,
                   f.dateTime(w.createdAt),
                   l.pendingAttempts(w.attempts),
                   ?_errorText(l, w.lastError),

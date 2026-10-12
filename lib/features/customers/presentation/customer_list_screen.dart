@@ -3,6 +3,7 @@ import 'package:field_crm/core/widgets/async_view.dart';
 import 'package:field_crm/core/widgets/failure_text.dart';
 import 'package:field_crm/core/widgets/list_detail_layout.dart';
 import 'package:field_crm/core/widgets/pending_badge.dart';
+import 'package:field_crm/core/widgets/section.dart';
 import 'package:field_crm/features/auth/application/auth_controller.dart';
 import 'package:field_crm/features/customers/application/customer_controllers.dart';
 import 'package:field_crm/features/customers/domain/customer.dart';
@@ -50,13 +51,17 @@ class _CustomerListScreenState extends ConsumerState<CustomerListScreen> {
         list: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
               child: TextField(
                 key: const Key('customer_filter'),
                 decoration: InputDecoration(
                   prefixIcon: const Icon(Icons.filter_list),
                   hintText: l.name,
                   isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
                 ),
                 onChanged: (v) => setState(() => _query = v),
               ),
@@ -71,14 +76,16 @@ class _CustomerListScreenState extends ConsumerState<CustomerListScreen> {
                       ref.invalidate(customerListProvider(query: _query)),
                   isEmpty: (v) => v.isEmpty,
                   data: (items) => ListView.builder(
+                    padding: const EdgeInsets.fromLTRB(8, 0, 8, 96),
                     itemCount: items.length,
                     itemBuilder: (_, i) {
                       final c = items[i];
                       return ListTile(
                         key: Key('customer_${c.id}'),
                         selected: wide && c.id == _selectedId,
-                        leading: Icon(
-                          c.isCompany ? Icons.business : Icons.person_outline,
+                        leading: LeadingGlyph(
+                          icon: c.isCompany ? Icons.business : null,
+                          text: c.isCompany ? null : c.name[0],
                         ),
                         title: Text(c.name),
                         subtitle: Text(

@@ -7,6 +7,7 @@ import 'package:field_crm/features/customers/domain/customer.dart';
 import 'package:field_crm/features/history/domain/history_entry.dart';
 import 'package:field_crm/features/opportunities/domain/opportunity.dart';
 import 'package:field_crm/features/pipeline/domain/pipeline_stage.dart';
+import 'package:field_crm/features/quotations/domain/quotation.dart';
 import 'package:field_crm/features/team/domain/team.dart';
 
 /// Turns `assets/seed/seed.json` into a [MockState]. The seed uses day offsets
@@ -83,6 +84,7 @@ class MockSeedLoader {
       passwords: passwords,
       teams: MockState.listFromJson(j['teams'], Team.fromJson),
       stages: MockState.listFromJson(j['stages'], PipelineStage.fromJson),
+      products: MockState.listFromJson(j['products'], Product.fromJson),
       activityTypes: MockState.listFromJson(
         j['activityTypes'],
         ActivityTypeDef.fromJson,

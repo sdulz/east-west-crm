@@ -8,8 +8,8 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'customer_controllers.g.dart';
 
-/// FR-MOB-004.
-@riverpod
+/// FR-MOB-004. Kept alive: tab switches must not refetch.
+@Riverpod(keepAlive: true)
 Future<List<Customer>> customerList(Ref ref, {String? query}) {
   ref
     ..watch(refreshTickProvider)
@@ -17,7 +17,7 @@ Future<List<Customer>> customerList(Ref ref, {String? query}) {
   return ref.watch(customerRepositoryProvider).list(query: query).orThrow;
 }
 
-@riverpod
+@Riverpod(keepAlive: true)
 Future<Customer> customerDetail(Ref ref, String id) {
   ref.watch(refreshTickProvider);
   return ref.watch(customerRepositoryProvider).getById(id).orThrow;
@@ -30,7 +30,7 @@ Future<Map<String, String>> customerNames(Ref ref) async {
   return {for (final c in list) c.id: c.name};
 }
 
-@riverpod
+@Riverpod(keepAlive: true)
 class CustomerSaver extends _$CustomerSaver {
   @override
   void build() {}

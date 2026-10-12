@@ -42,63 +42,72 @@ class QuickAddSheet extends ConsumerWidget {
     }
 
     return SafeArea(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          ListTile(
-            title: Text(
-              l.quickAdd,
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-          ),
-          if (p.canCreateCustomer)
-            ListTile(
-              key: const Key('quick_customer'),
-              leading: const Icon(Icons.person_add_alt),
-              title: Text(l.newCustomer),
-              onTap: () =>
-                  go(() => const CustomerNewRoute().push<void>(context)),
-            ),
-          if (p.canCreateOpportunity)
-            ListTile(
-              key: const Key('quick_opportunity'),
-              leading: const Icon(Icons.add_business_outlined),
-              title: Text(l.newOpportunity),
-              onTap: () => go(
-                () => OpportunityNewRoute(
-                  customerId:
-                      customerId ??
-                      (relatedType == RelatedType.customer ? relatedId : null),
-                ).push<void>(context),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  l.quickAdd,
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
               ),
             ),
-          if (p.canLogActivity) ...[
-            ListTile(
-              key: const Key('quick_interaction'),
-              leading: const Icon(Icons.call_outlined),
-              title: Text(l.logInteraction),
-              onTap: () => go(
-                () => ActivityFormRoute(
-                  type: ActivityType.call.name,
-                  relatedType: relatedType?.name,
-                  relatedId: relatedId,
-                ).push<void>(context),
+            if (p.canCreateCustomer)
+              ListTile(
+                key: const Key('quick_customer'),
+                leading: const Icon(Icons.person_add_alt),
+                title: Text(l.newCustomer),
+                onTap: () =>
+                    go(() => const CustomerNewRoute().push<void>(context)),
               ),
-            ),
-            ListTile(
-              key: const Key('quick_followup'),
-              leading: const Icon(Icons.alarm_add_outlined),
-              title: Text(l.newFollowUp),
-              onTap: () => go(
-                () => ActivityFormRoute(
-                  type: ActivityType.todo.name,
-                  relatedType: relatedType?.name,
-                  relatedId: relatedId,
-                ).push<void>(context),
+            if (p.canCreateOpportunity)
+              ListTile(
+                key: const Key('quick_opportunity'),
+                leading: const Icon(Icons.add_business_outlined),
+                title: Text(l.newOpportunity),
+                onTap: () => go(
+                  () => OpportunityNewRoute(
+                    customerId:
+                        customerId ??
+                        (relatedType == RelatedType.customer
+                            ? relatedId
+                            : null),
+                  ).push<void>(context),
+                ),
               ),
-            ),
+            if (p.canLogActivity) ...[
+              ListTile(
+                key: const Key('quick_interaction'),
+                leading: const Icon(Icons.call_outlined),
+                title: Text(l.logInteraction),
+                onTap: () => go(
+                  () => ActivityFormRoute(
+                    type: ActivityType.call.name,
+                    relatedType: relatedType?.name,
+                    relatedId: relatedId,
+                  ).push<void>(context),
+                ),
+              ),
+              ListTile(
+                key: const Key('quick_followup'),
+                leading: const Icon(Icons.alarm_add_outlined),
+                title: Text(l.newFollowUp),
+                onTap: () => go(
+                  () => ActivityFormRoute(
+                    type: ActivityType.todo.name,
+                    relatedType: relatedType?.name,
+                    relatedId: relatedId,
+                  ).push<void>(context),
+                ),
+              ),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }

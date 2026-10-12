@@ -7,8 +7,10 @@ import 'package:field_crm/core/mock/mock_state.dart';
 import 'package:field_crm/core/mock/mock_state_store.dart';
 import 'package:field_crm/core/result/failure.dart';
 import 'package:field_crm/core/result/result.dart';
+import 'package:field_crm/core/uuid.dart';
 import 'package:field_crm/features/activities/domain/activity.dart';
 import 'package:field_crm/features/auth/domain/app_user.dart';
+import 'package:field_crm/features/notifications/domain/app_notification.dart';
 import 'package:field_crm/features/opportunities/domain/opportunity.dart';
 import 'package:flutter/foundation.dart';
 
@@ -75,6 +77,31 @@ class MockStore extends ChangeNotifier {
   void setCurrentUser(String? id) {
     _currentUserId = id;
     notifyListeners();
+  }
+
+  // ---- notifications ------------------------------------------------------
+  /// Server-side notification for [userId]; silently skipped for oneself.
+  void notify({
+    required String userId,
+    required NotificationKind kind,
+    required String title,
+    required String body,
+    RelatedType? relatedType,
+    String? relatedId,
+  }) {
+    if (userId == _currentUserId) return;
+    _state.notifications.add(
+      AppNotification(
+        id: uuidV4(),
+        userId: userId,
+        kind: kind,
+        title: title,
+        body: body,
+        createdAt: clock.now(),
+        relatedType: relatedType?.name,
+        relatedId: relatedId,
+      ),
+    );
   }
 
   // ---- scope rules --------------------------------------------------------

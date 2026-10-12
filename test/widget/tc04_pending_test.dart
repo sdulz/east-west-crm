@@ -12,11 +12,11 @@ void main() {
     tester,
   ) async {
     final h = await TestHarness.create();
+    addTearDown(h.dispose);
     await pumpApp(tester, h);
     await login(tester);
     await pumpUntilFound(tester, find.byType(HomeScreen));
 
-    h.store.forceNextFailure = const Failure.network();
     await tester.tap(find.text('Clients'));
     await pumpUntilFound(tester, find.byKey(const Key('customer_add')));
     await tester.tap(find.byKey(const Key('customer_add')));
@@ -25,6 +25,8 @@ void main() {
       find.byKey(const Key('customer_name')),
       'Offline Co',
     );
+    // "Fail next call" is consumed by whichever mock call comes next.
+    h.store.forceNextFailure = const Failure.network();
     await tester.tap(find.byKey(const Key('customer_save')));
     await pumpUntilFound(
       tester,
@@ -55,13 +57,13 @@ void main() {
       isEmpty,
     );
     await finish(tester);
-    await h.dispose();
   });
 
   testWidgets('TC-04 validation failure is shown verbatim and NOT queued', (
     tester,
   ) async {
     final h = await TestHarness.create();
+    addTearDown(h.dispose);
     await pumpApp(tester, h);
     await login(tester);
     await pumpUntilFound(tester, find.byType(HomeScreen));
@@ -89,13 +91,13 @@ void main() {
       isFalse,
     );
     await finish(tester);
-    await h.dispose();
   });
 
   testWidgets(
     'TC-04 discard asks for confirmation; retry-all and failed state',
     (tester) async {
       final h = await TestHarness.create();
+      addTearDown(h.dispose);
       await pumpApp(tester, h);
       await login(tester);
       await pumpUntilFound(tester, find.byType(HomeScreen));
@@ -131,7 +133,6 @@ void main() {
         find.text('Nothing pending. All changes are confirmed.'),
       );
       await finish(tester);
-      await h.dispose();
     },
   );
 }

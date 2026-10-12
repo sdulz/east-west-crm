@@ -7,24 +7,39 @@ class SkeletonList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = Theme.of(context).colorScheme.surfaceContainerHighest;
+    final color = Theme.of(context).colorScheme.surfaceContainerHigh;
+    Widget bar(double w, double h) => Container(
+      height: h,
+      width: w,
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(h / 2),
+      ),
+    );
     return Semantics(
       label: 'Loading',
       child: ListView.separated(
         padding: const EdgeInsets.all(16),
         itemCount: rows,
-        separatorBuilder: (_, _) => const SizedBox(height: 12),
+        separatorBuilder: (_, _) => const SizedBox(height: 16),
         itemBuilder: (_, _) => Row(
           children: [
-            CircleAvatar(radius: 20, backgroundColor: color),
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: color,
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(height: 14, width: 180, color: color),
+                  bar(180, 14),
                   const SizedBox(height: 8),
-                  Container(height: 12, width: 120, color: color),
+                  bar(120, 12),
                 ],
               ),
             ),

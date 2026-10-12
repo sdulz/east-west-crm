@@ -6,8 +6,8 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'dashboard_controller.g.dart';
 
-/// FR-MOB-002.
-@riverpod
+/// FR-MOB-002. Kept alive: tab switches must not refetch.
+@Riverpod(keepAlive: true)
 class DashboardController extends _$DashboardController {
   @override
   Future<DashboardSummary> build() {

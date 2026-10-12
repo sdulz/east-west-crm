@@ -51,6 +51,39 @@ class AuthController extends _$AuthController {
     return r;
   }
 
+  Future<Result<AppUser, Failure>> updateProfile({
+    required String name,
+    String? phone,
+    String? avatarPath,
+  }) async {
+    final r = await ref
+        .read(authRepositoryProvider)
+        .updateProfile(name: name, phone: phone, avatarPath: avatarPath);
+    final s = state.value;
+    if (r case Ok(:final value) when s != null) {
+      state = AsyncData(s.copyWith(user: value));
+    }
+    return r;
+  }
+
+  Future<Result<void, Failure>> changePassword({
+    required String current,
+    required String next,
+  }) => ref
+      .read(authRepositoryProvider)
+      .changePassword(current: current, next: next);
+
+  Future<Result<String?, Failure>> requestPasswordReset(String email) =>
+      ref.read(authRepositoryProvider).requestPasswordReset(email);
+
+  Future<Result<void, Failure>> resetPassword({
+    required String email,
+    required String code,
+    required String newPassword,
+  }) => ref
+      .read(authRepositoryProvider)
+      .resetPassword(email: email, code: code, newPassword: newPassword);
+
   /// Re-run the restore flow (used by "Unlock with biometrics").
   void retryRestore() => ref.invalidateSelf();
 

@@ -7,6 +7,7 @@ import '../helpers/test_app.dart';
 void main() {
   testWidgets('TC-05 team view hidden for salesperson', (tester) async {
     final h = await TestHarness.create();
+    addTearDown(h.dispose);
     await pumpApp(tester, h);
     await login(tester);
     await pumpUntilFound(tester, find.byType(HomeScreen));
@@ -14,11 +15,11 @@ void main() {
     await pumpUntilFound(tester, find.byKey(const Key('profile_logout')));
     expect(find.byKey(const Key('profile_team')), findsNothing);
     await finish(tester);
-    await h.dispose();
   });
 
   testWidgets('TC-05 team view correct for supervisor', (tester) async {
     final h = await TestHarness.create();
+    addTearDown(h.dispose);
     await pumpApp(tester, h);
     await login(tester, email: 'maya@fieldcrm.test');
     await pumpUntilFound(tester, find.byType(HomeScreen));
@@ -36,6 +37,5 @@ void main() {
         .length;
     expect(find.textContaining('$open open'), findsWidgets);
     await finish(tester);
-    await h.dispose();
   });
 }

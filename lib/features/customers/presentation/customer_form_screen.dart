@@ -51,7 +51,6 @@ class _CustomerFormState extends ConsumerState<_CustomerForm> {
   bool _saving = false;
 
   static final _emailRe = RegExp(r'^[\w.+-]+@[\w-]+\.[\w.-]+$');
-  static final _phoneRe = RegExp(r'^\+?[0-9][0-9 -]{6,17}[0-9]$');
 
   @override
   void dispose() {
@@ -147,6 +146,7 @@ class _CustomerFormState extends ConsumerState<_CustomerForm> {
               onChanged: (v) => setState(() => _isCompany = v),
             ),
             DropdownButtonFormField<String?>(
+              isExpanded: true,
               initialValue: _parentId,
               decoration: InputDecoration(
                 labelText: l.parentCompany,
@@ -168,9 +168,7 @@ class _CustomerFormState extends ConsumerState<_CustomerForm> {
               textInputAction: TextInputAction.next,
               validator: (v) =>
                   _serverErrors['phone'] ??
-                  ((v != null &&
-                          v.trim().isNotEmpty &&
-                          !_phoneRe.hasMatch(v.trim()))
+                  ((v != null && v.trim().isNotEmpty && v.trim().length < 7)
                       ? l.invalidPhone
                       : null),
             ),

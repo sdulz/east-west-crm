@@ -19,12 +19,16 @@ import 'package:field_crm/features/handover/data/mock_user_directory_repository.
 import 'package:field_crm/features/handover/domain/user_directory_repository.dart';
 import 'package:field_crm/features/history/data/mock_history_repository.dart';
 import 'package:field_crm/features/history/domain/history_repository.dart';
+import 'package:field_crm/features/notifications/data/mock_notification_repository.dart';
+import 'package:field_crm/features/notifications/domain/notification_repository.dart';
 import 'package:field_crm/features/opportunities/data/mock_opportunity_repository.dart';
 import 'package:field_crm/features/opportunities/domain/opportunity_repository.dart';
 import 'package:field_crm/features/pending/data/drift_pending_queue_repository.dart';
 import 'package:field_crm/features/pending/domain/pending_queue_repository.dart';
 import 'package:field_crm/features/pipeline/data/mock_pipeline_repository.dart';
 import 'package:field_crm/features/pipeline/domain/pipeline_repository.dart';
+import 'package:field_crm/features/quotations/data/mock_quotation_repository.dart';
+import 'package:field_crm/features/quotations/domain/quotation_repository.dart';
 import 'package:field_crm/features/search/data/mock_search_repository.dart';
 import 'package:field_crm/features/search/domain/search_repository.dart';
 import 'package:field_crm/features/team/data/mock_team_repository.dart';
@@ -108,6 +112,14 @@ HistoryRepository historyRepository(Ref ref) =>
 @Riverpod(keepAlive: true)
 UserDirectoryRepository userDirectoryRepository(Ref ref) =>
     MockUserDirectoryRepository(ref.watch(mockStoreProvider));
+
+@Riverpod(keepAlive: true)
+NotificationRepository notificationRepository(Ref ref) =>
+    MockNotificationRepository(ref.watch(mockStoreProvider));
+
+@Riverpod(keepAlive: true)
+QuotationRepository quotationRepository(Ref ref) =>
+    MockQuotationRepository(ref.watch(mockStoreProvider));
 
 @Riverpod(keepAlive: true)
 TeamRepository teamRepository(Ref ref) =>

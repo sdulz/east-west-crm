@@ -28,7 +28,6 @@ class HistoryTimeline extends ConsumerWidget {
           for (final e in items)
             ListTile(
               key: Key('history_${e.id}'),
-              contentPadding: EdgeInsets.zero,
               leading: Icon(switch (e.kind) {
                 HistoryKind.activity => Icons.event_available_outlined,
                 HistoryKind.note => Icons.sticky_note_2_outlined,

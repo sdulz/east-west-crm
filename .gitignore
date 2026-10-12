@@ -52,3 +52,6 @@ app.*.map.json
 *.freezed.dart
 lib/core/l10n/generated/
 coverage/
+
+# alchemist diff output
+test/golden/failures/

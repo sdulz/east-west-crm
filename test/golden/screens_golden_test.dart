@@ -91,7 +91,13 @@ void main() {
     goldenTest(
       'home $mode',
       fileName: 'home_$mode',
-      pumpBeforeTest: (t) => t.pump(const Duration(seconds: 2)),
+      // Login, dashboard, opportunity list and reminder sync are chained
+      // mock calls; pump frame by frame until every timer has fired.
+      pumpBeforeTest: (t) async {
+        for (var i = 0; i < 12; i++) {
+          await t.pump(const Duration(milliseconds: 250));
+        }
+      },
       builder: () => GoldenTestGroup(
         scenarioConstraints: const BoxConstraints.tightFor(
           width: 400,

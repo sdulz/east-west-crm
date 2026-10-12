@@ -4,9 +4,11 @@ import 'package:field_crm/core/uuid.dart';
 import 'package:field_crm/core/widgets/async_view.dart';
 import 'package:field_crm/core/widgets/failure_text.dart';
 import 'package:field_crm/core/widgets/save_feedback.dart';
+import 'package:field_crm/core/widgets/search_picker.dart';
 import 'package:field_crm/features/activities/presentation/follow_up_actions.dart';
 import 'package:field_crm/features/auth/application/auth_controller.dart';
 import 'package:field_crm/features/customers/application/customer_controllers.dart';
+import 'package:field_crm/features/customers/domain/customer.dart';
 import 'package:field_crm/features/opportunities/application/opportunity_controllers.dart';
 import 'package:field_crm/features/opportunities/domain/opportunity.dart';
 import 'package:field_crm/features/pending/application/write_coordinator.dart';
@@ -138,23 +140,24 @@ class _OpportunityFormState extends ConsumerState<_OpportunityForm> {
                   ((v == null || v.trim().isEmpty) ? l.required : null),
             ),
             const SizedBox(height: 12),
-            DropdownButtonFormField<String>(
+            SearchPickerField<Customer>(
               key: const Key('opportunity_customer'),
-              initialValue: _customerId,
-              decoration: InputDecoration(
-                labelText: l.customer,
-                errorText: _serverErrors['customerId'],
-              ),
-              items: [
-                for (final c in customers)
-                  DropdownMenuItem(value: c.id, child: Text(c.name)),
-              ],
-              onChanged: isNew ? (v) => setState(() => _customerId = v) : null,
-              validator: (v) => v == null ? l.selectCustomer : null,
+              label: l.customer,
+              items: customers,
+              labelOf: (c) => c.name,
+              subtitleOf: (c) =>
+                  [c.city, c.phone].whereType<String>().join(' · '),
+              value: customers.where((c) => c.id == _customerId).firstOrNull,
+              enabled: isNew,
+              onChanged: (c) => setState(() => _customerId = c.id),
+              validator: (v) =>
+                  _serverErrors['customerId'] ??
+                  (v == null && _customerId == null ? l.selectCustomer : null),
             ),
             const SizedBox(height: 12),
             if (isNew)
               DropdownButtonFormField<String>(
+                isExpanded: true,
                 key: const Key('opportunity_stage'),
                 initialValue: _stageId ?? stages.firstOrNull?.id,
                 decoration: InputDecoration(
