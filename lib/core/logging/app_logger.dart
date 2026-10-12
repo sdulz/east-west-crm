@@ -28,8 +28,11 @@ class AppLogger {
   void warn(String message) => _log(message, level: 900);
 
   void error(String message, [Object? error, StackTrace? stack]) {
-    _log('$message ${error == null ? '' : redact(error.toString())}',
-        level: 1000, stack: stack);
+    _log(
+      '$message ${error == null ? '' : redact(error.toString())}',
+      level: 1000,
+      stack: stack,
+    );
   }
 
   void _log(String message, {required int level, StackTrace? stack}) {
@@ -45,8 +48,8 @@ class AppLogger {
   }
 
   SentryLevel _sentryLevel(int level) => switch (level) {
-        >= 1000 => SentryLevel.error,
-        >= 900 => SentryLevel.warning,
-        _ => SentryLevel.info,
-      };
+    >= 1000 => SentryLevel.error,
+    >= 900 => SentryLevel.warning,
+    _ => SentryLevel.info,
+  };
 }

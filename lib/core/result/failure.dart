@@ -18,9 +18,9 @@ sealed class Failure with _$Failure {
   /// Transient failures are the only ones that may be queued for retry
   /// (FR-MOB-013). Validation, permission and conflict are final.
   bool get isTransient => switch (this) {
-        NetworkFailure() || TimeoutFailure() => true,
-        _ => false,
-      };
+    NetworkFailure() || TimeoutFailure() => true,
+    _ => false,
+  };
 }
 
 /// Typed alias used throughout repositories.

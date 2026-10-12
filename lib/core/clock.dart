@@ -28,6 +28,10 @@ tz.TZDateTime inZone(DateTime utc, String zoneId) {
 /// Start of the local day for [utc] in [zoneId], returned as UTC.
 DateTime startOfDay(DateTime utc, String zoneId) {
   final local = inZone(utc, zoneId);
-  return tz.TZDateTime(local.location, local.year, local.month, local.day)
-      .toUtc();
+  return tz.TZDateTime(
+    local.location,
+    local.year,
+    local.month,
+    local.day,
+  ).toUtc();
 }

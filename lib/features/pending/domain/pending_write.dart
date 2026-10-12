@@ -30,6 +30,7 @@ abstract class PendingWrite with _$PendingWrite {
     @Default(PendingStatus.pending) PendingStatus status,
     @Default(0) int attempts,
     String? lastError,
+
     /// Human-readable label for the pending centre (no sensitive data).
     @Default('') String label,
   }) = _PendingWrite;

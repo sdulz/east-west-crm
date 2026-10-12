@@ -23,8 +23,9 @@ abstract final class AppTheme {
         isDense: false,
       ),
       cardTheme: const CardThemeData(margin: EdgeInsets.zero),
-      snackBarTheme:
-          const SnackBarThemeData(behavior: SnackBarBehavior.floating),
+      snackBarTheme: const SnackBarThemeData(
+        behavior: SnackBarBehavior.floating,
+      ),
       listTileTheme: const ListTileThemeData(minTileHeight: 48),
     );
   }
