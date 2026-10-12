@@ -46,3 +46,9 @@ app.*.map.json
 
 # Widget Preview related
 .widget_preview/
+
+# Generated code is rebuilt by build_runner / gen-l10n.
+*.g.dart
+*.freezed.dart
+lib/core/l10n/generated/
+coverage/

@@ -1,7 +1,10 @@
-include: package:flutter_lints/flutter.yaml
+include: package:very_good_analysis/analysis_options.yaml
 
 analyzer:
   exclude:
+    - "**/*.g.dart"
+    - "**/*.freezed.dart"
+    - "lib/core/l10n/generated/**"
     - build/**
     - android/**
     - ios/**
@@ -9,3 +12,16 @@ analyzer:
     - windows/**
     - macos/**
     - linux/**
+  errors:
+    invalid_annotation_target: ignore
+
+linter:
+  rules:
+    # Documented in docs/open_decisions.md: API docs are not required on every
+    # member of an app (as opposed to a package).
+    public_member_api_docs: false
+    # Riverpod notifiers and freezed factories read better with named params.
+    avoid_positional_boolean_parameters: false
+    # Dart 3.13 declaring-constructor syntax (`const this(...)`) is not emitted by
+    # freezed/drift/riverpod generators; mixing both styles is noise.
+    unnecessary_type_name_in_constructor: false

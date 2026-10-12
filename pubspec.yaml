@@ -1,5 +1,5 @@
 name: field_crm
-description: "A new Flutter project."
+description: Mobile CRM for field salespeople and supervisors (mock-backed, backend-agnostic).
 publish_to: 'none'
 version: 0.1.0+1
 
@@ -28,20 +28,37 @@ dependencies:
   timezone: ^0.11.1
 
 dev_dependencies:
+  alchemist: ^0.14.1
+  build_runner: ^2.16.2
+  drift_dev: ^2.35.1
   flutter_test:
     sdk: flutter
-  riverpod_generator: ^4.0.9
-  go_router_builder: ^4.5.0
   freezed: ^4.0.2
-  json_serializable: ^6.14.1
-  drift_dev: ^2.35.1
-  build_runner: ^2.16.2
-  very_good_analysis: ^11.0.0
-  mocktail: ^1.0.5
-  patrol: ^4.10.0
-  alchemist: ^0.14.1
+  go_router_builder: ^4.5.0
   integration_test:
     sdk: flutter
+  json_serializable: ^6.14.1
+  mocktail: ^1.0.5
+  patrol: ^4.10.0
+  riverpod_generator: ^4.0.9
+  very_good_analysis: ^11.0.0
+
+# SQLCipher build of sqlite3 (replaces the obsolete sqlcipher_flutter_libs package
+# for sqlite3 >= 3.x). See docs/open_decisions.md.
+hooks:
+  user_defines:
+    sqlite3:
+      source: sqlcipher
 
 flutter:
   uses-material-design: true
+  generate: true
+  assets:
+    - assets/seed/
+
+patrol:
+  app_name: Field CRM
+  android:
+    package_name: com.fieldcrm.field_crm
+  ios:
+    bundle_id: com.fieldcrm.fieldCrm
