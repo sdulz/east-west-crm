@@ -1,3 +1,5 @@
+import 'package:field_crm/core/result/failure.dart';
+
 /// A minimal sealed result type. Every repository method returns one of these
 /// so that failures are values, not exceptions.
 sealed class Result<T, F> {
@@ -55,4 +57,10 @@ final class Err<T, F> extends Result<T, F> {
 
   @override
   String toString() => 'Err($error)';
+}
+
+extension ResultFutureX<T> on Future<Result<T, Failure>> {
+  /// Unwraps for use inside Riverpod `build()`: the failure becomes the
+  /// provider's `AsyncError.error`, which the UI pattern-matches on.
+  Future<T> get orThrow => then((r) => r.fold((v) => v, (f) => throw f));
 }

@@ -5,7 +5,7 @@ part 'failure.freezed.dart';
 /// Every way a repository call can fail. Sealed so the UI can exhaustively
 /// decide between "queue and retry later" and "final, show it now".
 @freezed
-sealed class Failure with _$Failure {
+sealed class Failure with _$Failure implements Exception {
   const factory Failure.network() = NetworkFailure;
   const factory Failure.timeout() = TimeoutFailure;
   const factory Failure.permissionDenied() = PermissionDeniedFailure;
