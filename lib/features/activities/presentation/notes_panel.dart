@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:field_crm/core/format/app_formatters.dart';
+import 'package:field_crm/core/network/crm_api_client.dart';
 import 'package:field_crm/core/uuid.dart';
 import 'package:field_crm/core/widgets/failure_text.dart';
 import 'package:field_crm/core/widgets/save_feedback.dart';
@@ -66,9 +67,10 @@ class _NotesPanelState extends ConsumerState<NotesPanel> {
   // ponytail: picker cache paths are stored as-is; copy into app storage when
   // attachments must survive cache clears.
   Future<void> _attach() async {
-    final files = await FilePicker.pickFiles();
+    final result = await FilePicker.pickFiles(withData: true);
+    if (result == null) return;
     final paths = <String>[];
-    for (final f in files) {
+    for (final f in result.files) {
       // content:// results carry no path; keep a local copy instead.
       final path = f.path ?? await _copyLocal(f);
       if (path != null) paths.add(path);
@@ -147,7 +149,7 @@ class _NotesPanelState extends ConsumerState<NotesPanel> {
     final l = context.l10n;
     final f = ref.watch(formattersProvider);
     final theme = Theme.of(context);
-    final users = ref.watch(userNamesProvider).value ?? const {};
+    final users = ref.watch(userNamesProvider).valueOrNull ?? const {};
     final q = _mentionQuery?.toLowerCase();
     final suggestions = q == null
         ? const <String>[]
@@ -160,7 +162,7 @@ class _NotesPanelState extends ConsumerState<NotesPanel> {
       relatedType: widget.relatedType,
       relatedId: widget.relatedId,
     );
-    final notes = (ref.watch(activityListProvider(filter)).value ?? const [])
+    final notes = (ref.watch(activityListProvider(filter)).valueOrNull ?? const [])
         .where((a) => a.type == ActivityType.note)
         .toList()
         .reversed
@@ -321,12 +323,15 @@ class _NotesPanelState extends ConsumerState<NotesPanel> {
 
 Future<String?> _copyLocal(PlatformFile f) async {
   try {
+    final bytes =
+        f.bytes ?? (f.path != null ? await File(f.path!).readAsBytes() : null);
+    if (bytes == null) return null;
     final dir = await Directory('${Directory.systemTemp.path}/attachments')
         .create(recursive: true);
     final out = File(
       '${dir.path}/${DateTime.now().microsecondsSinceEpoch}_${f.name}',
     );
-    await out.writeAsBytes(await f.readAsBytes());
+    await out.writeAsBytes(bytes);
     return out.path;
   } on Object {
     return null;
@@ -357,10 +362,22 @@ class _Attachment extends StatelessWidget {
   const _Attachment({required this.path});
   final String path;
 
+  bool get _isNetwork =>
+      path.startsWith('http://') || path.startsWith('https://');
+
+  Map<String, String>? get _authHeaders {
+    final token = CrmApiClient.activeToken;
+    if (token != null && token.isNotEmpty) {
+      return {'Authorization': 'Bearer $token'};
+    }
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    if (!_isImage(path)) {
+    final isImg = _isImage(path) || path.contains('/api/v1/attachments/');
+    if (!isImg) {
       return Chip(
         avatar: Icon(_iconFor(path), size: 18),
         label: Text(_name(path), overflow: TextOverflow.ellipsis),
@@ -376,25 +393,43 @@ class _Attachment extends StatelessWidget {
           child: InteractiveViewer(
             child: ClipRRect(
               borderRadius: BorderRadius.circular(16),
-              child: Image.file(File(path), fit: BoxFit.contain),
+              child: _isNetwork
+                  ? Image.network(
+                      path,
+                      headers: _authHeaders,
+                      fit: BoxFit.contain,
+                    )
+                  : Image.file(File(path), fit: BoxFit.contain),
             ),
           ),
         ),
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(10),
-        child: Image.file(
-          File(path),
-          width: 72,
-          height: 72,
-          fit: BoxFit.cover,
-          errorBuilder: (_, _, _) => Container(
-            width: 72,
-            height: 72,
-            color: theme.colorScheme.surfaceContainerHigh,
-            child: const Icon(Icons.broken_image_outlined),
-          ),
-        ),
+        child: _isNetwork
+            ? Image.network(
+                path,
+                headers: _authHeaders,
+                width: 72,
+                height: 72,
+                fit: BoxFit.cover,
+                errorBuilder: (_, _, _) => Chip(
+                  avatar: const Icon(Icons.insert_drive_file_outlined, size: 18),
+                  label: Text(_name(path), overflow: TextOverflow.ellipsis),
+                ),
+              )
+            : Image.file(
+                File(path),
+                width: 72,
+                height: 72,
+                fit: BoxFit.cover,
+                errorBuilder: (_, _, _) => Container(
+                  width: 72,
+                  height: 72,
+                  color: theme.colorScheme.surfaceContainerHigh,
+                  child: const Icon(Icons.broken_image_outlined),
+                ),
+              ),
       ),
     );
   }

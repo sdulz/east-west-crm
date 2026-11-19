@@ -1,14 +1,12 @@
 import 'dart:convert';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:field_crm/app/providers.dart';
 import 'package:field_crm/core/result/failure.dart';
 import 'package:field_crm/core/result/result.dart';
 import 'package:field_crm/core/uuid.dart';
 import 'package:field_crm/features/pending/domain/pending_queue_repository.dart';
 import 'package:field_crm/features/pending/domain/pending_write.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
-
-part 'write_coordinator.g.dart';
 
 /// What the UI gets back from a save (FR-MOB-013 / FR-MOB-015).
 sealed class SaveOutcome<T> {
@@ -66,8 +64,7 @@ class WriteCoordinator {
   }
 }
 
-@riverpod
-WriteCoordinator writeCoordinator(Ref ref) => WriteCoordinator(
+final writeCoordinatorProvider = Provider<WriteCoordinator>((ref) => WriteCoordinator(
   ref.watch(pendingQueueRepositoryProvider),
   ref.watch(clockProvider).now,
-);
+));

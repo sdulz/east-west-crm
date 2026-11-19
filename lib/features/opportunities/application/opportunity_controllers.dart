@@ -1,16 +1,13 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:field_crm/app/providers.dart';
 import 'package:field_crm/core/result/result.dart';
 import 'package:field_crm/features/auth/application/auth_controller.dart';
 import 'package:field_crm/features/opportunities/domain/opportunity.dart';
 import 'package:field_crm/features/pending/application/write_coordinator.dart';
 import 'package:field_crm/features/pending/domain/pending_write.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-part 'opportunity_controllers.g.dart';
-
-/// FR-MOB-005. Kept alive: tab switches must not refetch.
-@Riverpod(keepAlive: true)
-Future<List<Opportunity>> opportunityList(Ref ref, {String? customerId}) {
+final _opportunityListFamily =
+    FutureProvider.family<List<Opportunity>, String?>((ref, customerId) {
   ref
     ..watch(refreshTickProvider)
     ..watch(currentUserProvider);
@@ -18,16 +15,18 @@ Future<List<Opportunity>> opportunityList(Ref ref, {String? customerId}) {
       .watch(opportunityRepositoryProvider)
       .list(customerId: customerId)
       .orThrow;
-}
+});
 
-@Riverpod(keepAlive: true)
-Future<Opportunity> opportunityDetail(Ref ref, String id) {
+FutureProvider<List<Opportunity>> opportunityListProvider({String? customerId}) =>
+    _opportunityListFamily(customerId);
+
+final opportunityDetailProvider =
+    FutureProvider.family<Opportunity, String>((ref, id) {
   ref.watch(refreshTickProvider);
   return ref.watch(opportunityRepositoryProvider).getById(id).orThrow;
-}
+});
 
-@Riverpod(keepAlive: true)
-class OpportunitySaver extends _$OpportunitySaver {
+class OpportunitySaver extends Notifier<void> {
   @override
   void build() {}
 
@@ -61,7 +60,6 @@ class OpportunitySaver extends _$OpportunitySaver {
     return out;
   }
 
-  /// FR-MOB-008.
   Future<SaveOutcome<Opportunity>> changeStage(
     Opportunity o, {
     required String toStageId,
@@ -86,7 +84,6 @@ class OpportunitySaver extends _$OpportunitySaver {
     return out;
   }
 
-  /// FR-MOB-009.
   Future<SaveOutcome<Opportunity>> reassign(
     Opportunity o, {
     required String newOwnerId,
@@ -111,3 +108,6 @@ class OpportunitySaver extends _$OpportunitySaver {
     return out;
   }
 }
+
+final opportunitySaverProvider =
+    NotifierProvider<OpportunitySaver, void>(OpportunitySaver.new);

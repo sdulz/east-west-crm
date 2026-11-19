@@ -1,0 +1,1 @@
+enum OtpFlowType { register, forgetPassword }

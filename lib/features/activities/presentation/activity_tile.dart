@@ -66,7 +66,7 @@ class ActivityTile extends ConsumerWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           PendingBadge(targetId: a.id),
-          if (showActions && !done && a.type == ActivityType.todo)
+          if (showActions && !done && a.type != ActivityType.note)
             PopupMenuButton<String>(
               tooltip: l.details,
               onSelected: (v) => switch (v) {

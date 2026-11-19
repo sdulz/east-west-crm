@@ -75,9 +75,9 @@ void main() {
       expect(fu.dueAt, isNotNull);
 
       // Appears on the dashboard (Today or Overdue depending on wall clock).
-      await tester.tap(find.byTooltip('Back'));
+      await tester.tap(find.byTooltip('Back').last);
       await tester.pump(const Duration(milliseconds: 400)); // pop animation
-      await tester.tap(find.byTooltip('Back'));
+      await tester.tap(find.byTooltip('Back').last);
       await pumpUntilFound(tester, find.byType(HomeScreen));
       await tester.drag(find.byType(RefreshIndicator), const Offset(0, 300));
       await tester.pump();

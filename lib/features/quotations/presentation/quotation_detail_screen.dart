@@ -70,8 +70,8 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
     final f = ref.watch(formattersProvider);
     final theme = Theme.of(context);
     final q = ref.watch(quotationDetailProvider(widget.id));
-    final invoice = ref.watch(quotationInvoiceProvider(widget.id)).value;
-    final customers = ref.watch(customerNamesProvider).value ?? const {};
+    final invoice = ref.watch(quotationInvoiceProvider(widget.id)).valueOrNull;
+    final customers = ref.watch(customerNamesProvider).valueOrNull ?? const {};
     final canConfirm = ref.watch(permissionsProvider).canCreateOpportunity;
     return Scaffold(
       appBar: AppBar(title: Text(q.value?.number ?? l.quotation)),

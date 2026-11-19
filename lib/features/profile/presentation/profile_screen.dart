@@ -80,7 +80,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final user = ref.watch(currentUserProvider);
     final perms = ref.watch(permissionsProvider);
     final settings =
-        ref.watch(settingsControllerProvider).value ?? const AppSettings();
+        ref.watch(settingsControllerProvider).valueOrNull ?? const AppSettings();
     final pending = ref.watch(pendingCountProvider);
     return Scaffold(
       appBar: AppBar(title: Text(l.navProfile)),
@@ -95,12 +95,24 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   if (user.avatarPath != null)
                     ClipRRect(
                       borderRadius: BorderRadius.circular(17),
-                      child: Image.file(
-                        File(user.avatarPath!),
-                        width: 56,
-                        height: 56,
-                        fit: BoxFit.cover,
-                      ),
+                      child: (user.avatarPath!.startsWith('http://') ||
+                              user.avatarPath!.startsWith('https://'))
+                          ? Image.network(
+                              user.avatarPath!,
+                              width: 56,
+                              height: 56,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, _, _) =>
+                                  LeadingGlyph(text: user.name[0], size: 56),
+                            )
+                          : Image.file(
+                              File(user.avatarPath!),
+                              width: 56,
+                              height: 56,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, _, _) =>
+                                  LeadingGlyph(text: user.name[0], size: 56),
+                            ),
                     )
                   else
                     LeadingGlyph(text: user.name[0], size: 56),

@@ -121,8 +121,8 @@ class _OpportunityFormState extends ConsumerState<_OpportunityForm> {
   Widget build(BuildContext context) {
     final l = context.l10n;
     final f = ref.watch(formattersProvider);
-    final customers = ref.watch(customerListProvider()).value ?? const [];
-    final stages = ref.watch(stagesProvider).value ?? const [];
+    final customers = ref.watch(customerListProvider()).valueOrNull ?? const [];
+    final stages = ref.watch(stagesProvider).valueOrNull ?? const [];
     final isNew = widget.initial == null;
     return Scaffold(
       appBar: AppBar(title: Text(isNew ? l.newOpportunity : l.editOpportunity)),

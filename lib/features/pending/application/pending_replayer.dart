@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:field_crm/app/providers.dart';
 import 'package:field_crm/core/result/failure.dart';
 import 'package:field_crm/core/result/result.dart';
@@ -7,9 +8,6 @@ import 'package:field_crm/features/activities/domain/activity.dart';
 import 'package:field_crm/features/customers/domain/customer.dart';
 import 'package:field_crm/features/opportunities/domain/opportunity.dart';
 import 'package:field_crm/features/pending/domain/pending_write.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
-
-part 'pending_replayer.g.dart';
 
 /// Re-issues a queued write against the repositories. Payload shapes are
 /// produced by the feature controllers and consumed only here.
@@ -65,5 +63,5 @@ class PendingReplayer {
   }
 }
 
-@riverpod
-PendingReplayer pendingReplayer(Ref ref) => PendingReplayer(ref);
+final pendingReplayerProvider =
+    Provider<PendingReplayer>((ref) => PendingReplayer(ref));

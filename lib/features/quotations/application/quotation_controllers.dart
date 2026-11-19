@@ -1,68 +1,106 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:field_crm/app/providers.dart';
 import 'package:field_crm/core/result/failure.dart';
 import 'package:field_crm/core/result/result.dart';
 import 'package:field_crm/features/auth/application/auth_controller.dart';
 import 'package:field_crm/features/quotations/domain/quotation.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-part 'quotation_controllers.g.dart';
+class QuotationListParams {
+  final String? customerId;
+  final String? opportunityId;
+  const QuotationListParams({this.customerId, this.opportunityId});
 
-@Riverpod(keepAlive: true)
-Future<List<Quotation>> quotationList(
-  Ref ref, {
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is QuotationListParams &&
+          customerId == other.customerId &&
+          opportunityId == other.opportunityId;
+
+  @override
+  int get hashCode => Object.hash(customerId, opportunityId);
+}
+
+final _quotationListFamily =
+    FutureProvider.family<List<Quotation>, QuotationListParams>((ref, params) {
+  ref
+    ..watch(refreshTickProvider)
+    ..watch(currentUserProvider);
+  return ref
+      .watch(quotationRepositoryProvider)
+      .list(customerId: params.customerId, opportunityId: params.opportunityId)
+      .orThrow;
+});
+
+FutureProvider<List<Quotation>> quotationListProvider({
   String? customerId,
   String? opportunityId,
-}) {
-  ref
-    ..watch(refreshTickProvider)
-    ..watch(currentUserProvider);
-  return ref
-      .watch(quotationRepositoryProvider)
-      .list(customerId: customerId, opportunityId: opportunityId)
-      .orThrow;
-}
+}) =>
+    _quotationListFamily(QuotationListParams(
+      customerId: customerId,
+      opportunityId: opportunityId,
+    ));
 
-@Riverpod(keepAlive: true)
-Future<List<Product>> productList(Ref ref) {
+final productListProvider = FutureProvider<List<Product>>((ref) {
   ref.watch(currentUserProvider);
   return ref.watch(quotationRepositoryProvider).products().orThrow;
-}
+});
 
-@Riverpod(keepAlive: true)
-Future<Quotation> quotationDetail(Ref ref, String id) {
+final quotationDetailProvider =
+    FutureProvider.family<Quotation, String>((ref, id) {
   ref.watch(refreshTickProvider);
   return ref.watch(quotationRepositoryProvider).getById(id).orThrow;
+});
+
+class InvoiceListParams {
+  final String? customerId;
+  final bool pendingOnly;
+  const InvoiceListParams({this.customerId, this.pendingOnly = false});
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is InvoiceListParams &&
+          customerId == other.customerId &&
+          pendingOnly == other.pendingOnly;
+
+  @override
+  int get hashCode => Object.hash(customerId, pendingOnly);
 }
 
-@Riverpod(keepAlive: true)
-Future<List<Invoice>> invoiceList(
-  Ref ref, {
-  String? customerId,
-  bool pendingOnly = false,
-}) {
+final _invoiceListFamily =
+    FutureProvider.family<List<Invoice>, InvoiceListParams>((ref, params) {
   ref
     ..watch(refreshTickProvider)
     ..watch(currentUserProvider);
   return ref
       .watch(quotationRepositoryProvider)
-      .invoices(customerId: customerId, pendingOnly: pendingOnly)
+      .invoices(
+        customerId: params.customerId,
+        pendingOnly: params.pendingOnly,
+      )
       .orThrow;
-}
+});
 
-/// Invoice created by a quotation; `null` while it is still a draft.
-@Riverpod(keepAlive: true)
-Future<Invoice?> quotationInvoice(Ref ref, String quotationId) async {
+FutureProvider<List<Invoice>> invoiceListProvider({
+  String? customerId,
+  bool pendingOnly = false,
+}) =>
+    _invoiceListFamily(InvoiceListParams(
+      customerId: customerId,
+      pendingOnly: pendingOnly,
+    ));
+
+final quotationInvoiceProvider =
+    FutureProvider.family<Invoice?, String>((ref, quotationId) async {
   ref.watch(refreshTickProvider);
   final r = await ref
       .watch(quotationRepositoryProvider)
       .invoiceFor(quotationId);
   return r.valueOrNull;
-}
+});
 
-// ponytail: quotations are online-only. Add WriteOperation values and replay
-// support when drafting quotations offline matters.
-@Riverpod(keepAlive: true)
-class QuotationSaver extends _$QuotationSaver {
+class QuotationSaver extends Notifier<void> {
   @override
   void build() {}
 
@@ -81,3 +119,6 @@ class QuotationSaver extends _$QuotationSaver {
   Future<Result<Invoice, Failure>> markPaid(String invoiceId) =>
       _confirmed(ref.read(quotationRepositoryProvider).markPaid(invoiceId));
 }
+
+final quotationSaverProvider =
+    NotifierProvider<QuotationSaver, void>(QuotationSaver.new);

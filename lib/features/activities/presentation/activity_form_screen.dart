@@ -94,13 +94,13 @@ class _ActivityFormScreenState extends ConsumerState<ActivityFormScreen> {
   Widget build(BuildContext context) {
     final l = context.l10n;
     final f = ref.watch(formattersProvider);
-    final types = ref.watch(activityTypesProvider).value ?? const [];
+    final types = ref.watch(activityTypesProvider).valueOrNull ?? const [];
     final followUp = _isFollowUp(types);
     final visibleTypes = widget.type == ActivityType.todo
         ? types.where((t) => t.isFollowUp).toList()
         : types;
-    final customers = ref.watch(customerListProvider()).value ?? const [];
-    final opps = ref.watch(opportunityListProvider()).value ?? const [];
+    final customers = ref.watch(customerListProvider()).valueOrNull ?? const [];
+    final opps = ref.watch(opportunityListProvider()).valueOrNull ?? const [];
     return Scaffold(
       appBar: AppBar(title: Text(followUp ? l.newFollowUp : l.logInteraction)),
       body: Form(

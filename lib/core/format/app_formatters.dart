@@ -1,10 +1,8 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:field_crm/app/env.dart';
 import 'package:field_crm/core/clock.dart';
 import 'package:field_crm/features/auth/application/auth_controller.dart';
 import 'package:intl/intl.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
-
-part 'app_formatters.g.dart';
 
 /// Dates in the user's timezone, money in the configured currency.
 class AppFormatters {
@@ -34,8 +32,7 @@ class AppFormatters {
       DateFormat.E(locale).add_jm().format(inZone(utc, timezone));
 }
 
-@riverpod
-AppFormatters formatters(Ref ref) => AppFormatters(
+final formattersProvider = Provider<AppFormatters>((ref) => AppFormatters(
   timezone: ref.watch(currentUserProvider)?.timezone ?? 'UTC',
   locale: Intl.defaultLocale,
-);
+));

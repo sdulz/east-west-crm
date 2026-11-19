@@ -1,18 +1,9 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:field_crm/features/auth/application/auth_controller.dart';
 import 'package:field_crm/features/opportunities/domain/opportunity.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-part 'assignment_watcher.g.dart';
-
-/// FR-MOB-012 in-app banner: opportunities that became mine since the last
-/// load in this session. First load seeds the baseline silently.
-@Riverpod(keepAlive: true)
-class AssignmentWatcher extends _$AssignmentWatcher {
-  Set<String>? _seen;
-  String? _userId;
-
-  @override
-  List<Opportunity> build() {
+class AssignmentWatcherNotifier extends StateNotifier<List<Opportunity>> {
+  AssignmentWatcherNotifier(this.ref) : super(const []) {
     ref.listen(currentUserProvider, (_, user) {
       if (user?.id != _userId) {
         _userId = user?.id;
@@ -20,8 +11,11 @@ class AssignmentWatcher extends _$AssignmentWatcher {
         state = const [];
       }
     });
-    return const [];
   }
+
+  final Ref ref;
+  Set<String>? _seen;
+  String? _userId;
 
   void check(List<Opportunity> mine) {
     final ids = mine.map((o) => o.id).toSet();
@@ -37,3 +31,8 @@ class AssignmentWatcher extends _$AssignmentWatcher {
 
   void dismiss() => state = const [];
 }
+
+final assignmentWatcherProvider =
+    StateNotifierProvider<AssignmentWatcherNotifier, List<Opportunity>>(
+  (ref) => AssignmentWatcherNotifier(ref),
+);

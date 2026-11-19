@@ -1,0 +1,4 @@
+enum ImagePickerEnum {
+  singleImage,
+  multipleImage,
+}

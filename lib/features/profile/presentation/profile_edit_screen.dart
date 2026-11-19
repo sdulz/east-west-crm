@@ -130,12 +130,24 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                   else
                     ClipRRect(
                       borderRadius: BorderRadius.circular(28),
-                      child: Image.file(
-                        File(_avatarPath!),
-                        width: 96,
-                        height: 96,
-                        fit: BoxFit.cover,
-                      ),
+                      child: (_avatarPath!.startsWith('http://') ||
+                              _avatarPath!.startsWith('https://'))
+                          ? Image.network(
+                              _avatarPath!,
+                              width: 96,
+                              height: 96,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, _, _) =>
+                                  LeadingGlyph(text: initial, size: 96),
+                            )
+                          : Image.file(
+                              File(_avatarPath!),
+                              width: 96,
+                              height: 96,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, _, _) =>
+                                  LeadingGlyph(text: initial, size: 96),
+                            ),
                     ),
                   Positioned(
                     right: -4,

@@ -1,30 +1,26 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:field_crm/app/providers.dart';
 import 'package:field_crm/core/result/result.dart';
 import 'package:field_crm/features/auth/application/auth_controller.dart';
 import 'package:field_crm/features/notifications/domain/app_notification.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-part 'notification_controllers.g.dart';
-
-@Riverpod(keepAlive: true)
-Future<List<AppNotification>> notificationList(Ref ref) {
+final notificationListProvider =
+    FutureProvider<List<AppNotification>>((ref) {
   ref
     ..watch(refreshTickProvider)
     ..watch(currentUserProvider);
   return ref.watch(notificationRepositoryProvider).list().orThrow;
-}
+});
 
-@riverpod
-int unreadNotificationCount(Ref ref) =>
+final unreadNotificationCountProvider = Provider<int>((ref) =>
     ref
         .watch(notificationListProvider)
         .value
         ?.where((n) => n.isUnread)
         .length ??
-    0;
+    0);
 
-@Riverpod(keepAlive: true)
-class NotificationActions extends _$NotificationActions {
+class NotificationActions extends Notifier<void> {
   @override
   void build() {}
 
@@ -38,3 +34,6 @@ class NotificationActions extends _$NotificationActions {
     ref.read(refreshTickProvider.notifier).bump();
   }
 }
+
+final notificationActionsProvider =
+    NotifierProvider<NotificationActions, void>(NotificationActions.new);

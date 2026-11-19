@@ -1,38 +1,31 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:field_crm/app/providers.dart';
 import 'package:field_crm/core/result/result.dart';
 import 'package:field_crm/features/activities/domain/activity.dart';
 import 'package:field_crm/features/auth/application/auth_controller.dart';
 import 'package:field_crm/features/pending/application/write_coordinator.dart';
 import 'package:field_crm/features/pending/domain/pending_write.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-part 'activity_controllers.g.dart';
+final activityTypesProvider = FutureProvider<List<ActivityTypeDef>>((ref) =>
+    ref.watch(activityRepositoryProvider).types().orThrow);
 
-@Riverpod(keepAlive: true)
-Future<List<ActivityTypeDef>> activityTypes(Ref ref) =>
-    ref.watch(activityRepositoryProvider).types().orThrow;
-
-/// FR-MOB-006 / FR-MOB-007 lists.
-@riverpod
-Future<List<Activity>> activityList(Ref ref, ActivityFilter filter) {
+final activityListProvider =
+    FutureProvider.family<List<Activity>, ActivityFilter>((ref, filter) {
   ref
     ..watch(refreshTickProvider)
     ..watch(currentUserProvider);
   return ref.watch(activityRepositoryProvider).list(filter).orThrow;
-}
+});
 
-/// The current user's open follow-ups.
-@riverpod
-Future<List<Activity>> myFollowUps(Ref ref) {
+final myFollowUpsProvider = FutureProvider<List<Activity>>((ref) {
   final me = ref.watch(currentUserProvider);
   return ref.watch(
     activityListProvider(ActivityFilter(ownerId: me?.id, followUpsOnly: true))
         .future,
   );
-}
+});
 
-@Riverpod(keepAlive: true)
-class ActivitySaver extends _$ActivitySaver {
+class ActivitySaver extends Notifier<void> {
   @override
   void build() {}
 
@@ -94,3 +87,6 @@ class ActivitySaver extends _$ActivitySaver {
     return out;
   }
 }
+
+final activitySaverProvider =
+    NotifierProvider<ActivitySaver, void>(ActivitySaver.new);

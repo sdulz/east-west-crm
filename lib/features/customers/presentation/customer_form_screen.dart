@@ -118,7 +118,7 @@ class _CustomerFormState extends ConsumerState<_CustomerForm> {
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
-    final companies = (ref.watch(customerListProvider()).value ?? const [])
+    final companies = (ref.watch(customerListProvider()).valueOrNull ?? const [])
         .where((c) => c.isCompany && c.id != _id)
         .toList();
     return Scaffold(
@@ -143,11 +143,14 @@ class _CustomerFormState extends ConsumerState<_CustomerForm> {
               title: Text(l.isCompany),
               value: _isCompany,
               contentPadding: EdgeInsets.zero,
-              onChanged: (v) => setState(() => _isCompany = v),
+              onChanged: (v) => setState(() {
+                _isCompany = v;
+                if (v) _parentId = null;
+              }),
             ),
             DropdownButtonFormField<String?>(
               isExpanded: true,
-              initialValue: _parentId,
+              initialValue: _isCompany ? null : _parentId,
               decoration: InputDecoration(
                 labelText: l.parentCompany,
                 errorText: _serverErrors['parentId'],
@@ -157,7 +160,9 @@ class _CustomerFormState extends ConsumerState<_CustomerForm> {
                 for (final c in companies)
                   DropdownMenuItem(value: c.id, child: Text(c.name)),
               ],
-              onChanged: (v) => setState(() => _parentId = v),
+              onChanged: _isCompany
+                  ? null
+                  : (v) => setState(() => _parentId = v),
             ),
             const SizedBox(height: 12),
             TextFormField(

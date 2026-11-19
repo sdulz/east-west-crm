@@ -1,18 +1,15 @@
 import 'dart:async';
 import 'dart:math';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:field_crm/app/providers.dart';
 import 'package:field_crm/core/logging/app_logger.dart';
 import 'package:field_crm/features/pending/application/pending_queue_controller.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
-
-part 'reconnect_retry.g.dart';
 
 /// One automatic retry pass when connectivity returns, delayed by an
 /// exponential backoff derived from the most-attempted item. Never loops:
 /// a failed pass waits for the next reconnect or a manual retry.
-@Riverpod(keepAlive: true)
-class ReconnectRetry extends _$ReconnectRetry {
+class ReconnectRetry extends Notifier<void> {
   static const _log = AppLogger('reconnect');
   Timer? _timer;
   bool _wasOnline = true;
@@ -61,3 +58,6 @@ class ReconnectRetry extends _$ReconnectRetry {
   static Duration backoff(int attempts) =>
       Duration(seconds: min(60, 1 << min(attempts, 6)));
 }
+
+final reconnectRetryProvider =
+    NotifierProvider<ReconnectRetry, void>(ReconnectRetry.new);

@@ -1,16 +1,13 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:field_crm/app/env.dart';
 import 'package:field_crm/app/providers.dart';
 import 'package:field_crm/core/result/failure.dart';
 import 'package:field_crm/core/result/result.dart';
 import 'package:field_crm/features/pending/application/pending_replayer.dart';
 import 'package:field_crm/features/pending/domain/pending_write.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
-
-part 'pending_queue_controller.g.dart';
 
 /// FR-MOB-013. Streams the encrypted queue and runs retries / discards.
-@Riverpod(keepAlive: true)
-class PendingQueueController extends _$PendingQueueController {
+class PendingQueueController extends StreamNotifier<List<PendingWrite>> {
   @override
   Stream<List<PendingWrite>> build() =>
       ref.watch(pendingQueueRepositoryProvider).watchAll().asyncMap(_expire);
@@ -88,18 +85,21 @@ class PendingQueueController extends _$PendingQueueController {
   };
 }
 
+final pendingQueueControllerProvider =
+    StreamNotifierProvider<PendingQueueController, List<PendingWrite>>(
+  PendingQueueController.new,
+);
+
 /// targetId -> status, for badges in lists and detail screens.
-@riverpod
-Map<String, PendingStatus> pendingByTarget(Ref ref) {
-  final items = ref.watch(pendingQueueControllerProvider).value ?? const [];
+final pendingByTargetProvider = Provider<Map<String, PendingStatus>>((ref) {
+  final items = ref.watch(pendingQueueControllerProvider).valueOrNull ?? const [];
   final map = <String, PendingStatus>{};
   for (final w in items) {
     // Failed wins over pending so the worse state is visible.
     if (map[w.targetId] != PendingStatus.failed) map[w.targetId] = w.status;
   }
   return map;
-}
+});
 
-@riverpod
-int pendingCount(Ref ref) =>
-    ref.watch(pendingQueueControllerProvider).value?.length ?? 0;
+final pendingCountProvider = Provider<int>((ref) =>
+    ref.watch(pendingQueueControllerProvider).valueOrNull?.length ?? 0);

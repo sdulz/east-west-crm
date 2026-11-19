@@ -110,8 +110,8 @@ class _QuotationFormScreenState extends ConsumerState<QuotationFormScreen> {
     final l = context.l10n;
     final f = ref.watch(formattersProvider);
     final theme = Theme.of(context);
-    final customers = ref.watch(customerListProvider()).value ?? const [];
-    final products = ref.watch(productListProvider).value ?? const <Product>[];
+    final customers = ref.watch(customerListProvider()).valueOrNull ?? const [];
+    final products = ref.watch(productListProvider).valueOrNull ?? const <Product>[];
     return Scaffold(
       appBar: AppBar(title: Text(l.newQuotation)),
       body: Form(

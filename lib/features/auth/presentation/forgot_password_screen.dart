@@ -48,12 +48,15 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
     final l = context.l10n;
     switch (r) {
       case Ok(:final value):
-        setState(() => _codeSent = true);
-        _snack(
-          AppEnv.isDev && value != null
-              ? l.resetCodeDev(value)
-              : l.resetCodeSent,
-        );
+        if (value == null) {
+          _snack(l.resetCodeSent);
+          Navigator.pop(context);
+        } else {
+          setState(() => _codeSent = true);
+          _snack(
+            AppEnv.isDev ? l.resetCodeDev(value) : l.resetCodeSent,
+          );
+        }
       case Err(:final error):
         _snack(failureMessage(context, error));
     }

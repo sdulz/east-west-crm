@@ -1,16 +1,15 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:field_crm/app/providers.dart';
 import 'package:field_crm/core/result/failure.dart';
 import 'package:field_crm/core/result/result.dart';
 import 'package:field_crm/core/storage/secure_store.dart';
 import 'package:field_crm/features/auth/domain/app_user.dart';
 import 'package:field_crm/features/auth/domain/session.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-part 'auth_controller.g.dart';
+final authControllerProvider =
+    AsyncNotifierProvider<AuthController, Session?>(AuthController.new);
 
-/// FR-MOB-001. `null` means logged out.
-@Riverpod(keepAlive: true)
-class AuthController extends _$AuthController {
+class AuthController extends AsyncNotifier<Session?> {
   @override
   Future<Session?> build() async {
     final secure = ref.watch(secureStoreProvider);
@@ -19,7 +18,6 @@ class AuthController extends _$AuthController {
     if (await secure.read(SecureKeys.biometricEnabled) == 'true') {
       final bio = ref.read(biometricAuthProvider);
       if (await bio.isAvailable() && !await bio.authenticate('Unlock')) {
-        // Token stays; the login screen offers "Unlock with biometrics".
         return null;
       }
     }
@@ -84,7 +82,6 @@ class AuthController extends _$AuthController {
       .read(authRepositoryProvider)
       .resetPassword(email: email, code: code, newPassword: newPassword);
 
-  /// Re-run the restore flow (used by "Unlock with biometrics").
   void retryRestore() => ref.invalidateSelf();
 
   Future<void> setBiometricEnabled(bool enabled) => ref
@@ -95,7 +92,6 @@ class AuthController extends _$AuthController {
       await ref.read(secureStoreProvider).read(SecureKeys.biometricEnabled) ==
       'true';
 
-  /// Wipes session and the pending queue (FR-MOB-001).
   Future<void> logout() async {
     final token = state.value?.token;
     if (token != null) await ref.read(authRepositoryProvider).logout(token);
@@ -105,21 +101,20 @@ class AuthController extends _$AuthController {
   }
 }
 
-@riverpod
-AppUser? currentUser(Ref ref) => ref.watch(authControllerProvider).value?.user;
+final currentUserProvider = Provider<AppUser?>((ref) =>
+    ref.watch(authControllerProvider).value?.user);
 
-@riverpod
-Permissions permissions(Ref ref) =>
-    ref.watch(currentUserProvider)?.permissions ?? const Permissions();
+final permissionsProvider = Provider<Permissions>((ref) =>
+    ref.watch(currentUserProvider)?.permissions ?? const Permissions());
 
-/// Inactivity lock. The router redirects to the lock screen while `true`.
-@Riverpod(keepAlive: true)
-class AppLock extends _$AppLock {
-  @override
-  bool build() => false;
+class AppLockNotifier extends StateNotifier<bool> {
+  AppLockNotifier() : super(false);
   void lock() => state = true;
   void unlock() => state = false;
 }
 
-@riverpod
-String? currentUserId(Ref ref) => ref.watch(currentUserProvider)?.id;
+final appLockProvider = StateNotifierProvider<AppLockNotifier, bool>((ref) =>
+    AppLockNotifier());
+
+final currentUserIdProvider = Provider<String?>((ref) =>
+    ref.watch(currentUserProvider)?.id);

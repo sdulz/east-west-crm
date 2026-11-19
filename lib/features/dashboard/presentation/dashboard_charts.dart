@@ -32,8 +32,8 @@ class PipelineCard extends ConsumerWidget {
     final f = ref.watch(formattersProvider);
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    final stages = ref.watch(stagesProvider).value ?? const <PipelineStage>[];
-    final opps = ref.watch(opportunityListProvider()).value;
+    final stages = ref.watch(stagesProvider).valueOrNull ?? const <PipelineStage>[];
+    final opps = ref.watch(opportunityListProvider()).valueOrNull;
     if (opps == null || stages.isEmpty) {
       return const Panel(child: LinearProgressIndicator());
     }
@@ -282,7 +282,7 @@ class InvoicesCard extends ConsumerWidget {
     final scheme = theme.colorScheme;
     final now = ref.watch(clockProvider).now();
     final items =
-        ref.watch(invoiceListProvider(pendingOnly: true)).value ??
+        ref.watch(invoiceListProvider(pendingOnly: true)).valueOrNull ??
         const <Invoice>[];
     final due = items.fold<double>(0, (s, i) => s + i.amount);
     final overdue = items.where((i) => i.dueAt.isBefore(now)).length;

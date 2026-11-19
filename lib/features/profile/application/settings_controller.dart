@@ -1,8 +1,6 @@
-import 'package:field_crm/app/providers.dart';
 import 'package:flutter/material.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
-
-part 'settings_controller.g.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:field_crm/app/providers.dart';
 
 class AppSettings {
   const AppSettings({this.themeMode = ThemeMode.system, this.locale});
@@ -16,8 +14,12 @@ class AppSettings {
       );
 }
 
-@Riverpod(keepAlive: true)
-class SettingsController extends _$SettingsController {
+final settingsControllerProvider =
+    AsyncNotifierProvider<SettingsController, AppSettings>(
+  SettingsController.new,
+);
+
+class SettingsController extends AsyncNotifier<AppSettings> {
   @override
   Future<AppSettings> build() async {
     final kv = ref.watch(keyValueStoreProvider);

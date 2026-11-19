@@ -5,6 +5,10 @@ import 'dart:math';
 import 'package:field_crm/app/app.dart';
 import 'package:field_crm/app/env.dart';
 import 'package:field_crm/app/providers.dart';
+import 'package:field_crm/common/controller/local_storage_provider.dart';
+import 'package:field_crm/common/repository/hive_local_storage.dart';
+import 'package:field_crm/common/repository/local_storage.dart';
+import 'package:field_crm/common/widgets/custom_system_chrome.dart';
 import 'package:field_crm/core/clock.dart';
 import 'package:field_crm/core/logging/app_logger.dart';
 import 'package:field_crm/core/mock/mock_seed_loader.dart';
@@ -24,9 +28,14 @@ import 'package:timezone/data/latest.dart' as tzdata;
 
 const _log = AppLogger('bootstrap');
 
-/// Shared entry point for every flavor (main_dev / main_uat / main_prod).
-Future<void> bootstrap() async {
+/// Shared bootstrap entry point for the application.
+Future<void> bootstrap({LocalStorage? hiveStorage}) async {
   WidgetsFlutterBinding.ensureInitialized();
+  PaintingBinding.instance.imageCache
+    ..maximumSize = 80
+    ..maximumSizeBytes = 48 << 20;
+
+  await CustomSystemChrome.setDefault();
   tzdata.initializeTimeZones();
 
   final secure = FlutterSecureStore();
@@ -38,8 +47,10 @@ Future<void> bootstrap() async {
     seedJson: await rootBundle.loadString('assets/seed/seed.json'),
     stateStore: DriftMockStateStore(db),
   );
+  final storage = hiveStorage ?? await HiveLocalStorage.init();
 
   final overrides = [
+    localStorageProvider.overrideWithValue(storage),
     secureStoreProvider.overrideWithValue(secure),
     appDatabaseProvider.overrideWithValue(db),
     mockStoreProvider.overrideWithValue(store),
@@ -52,10 +63,11 @@ Future<void> bootstrap() async {
     runApp(
       UncontrolledProviderScope(
         container: container,
-        child: const FieldCrmApp(),
+        child: const MyApp(),
       ),
     );
   }
+
 
   if (AppEnv.sentryDsn.isEmpty) {
     await run();

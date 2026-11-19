@@ -15,12 +15,15 @@ import 'package:field_crm/core/notifications/reminder_scheduler.dart';
 import 'package:field_crm/core/storage/app_database.dart';
 import 'package:field_crm/core/storage/biometric_auth.dart';
 import 'package:field_crm/core/storage/secure_store.dart';
+import 'package:field_crm/common/controller/local_storage_provider.dart';
+import 'package:field_crm/common/repository/local_storage.dart';
 import 'package:field_crm/features/pending/domain/pending_queue_repository.dart';
 import 'package:field_crm/features/pending/domain/pending_write.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:timezone/data/latest.dart' as tzdata;
+
 
 /// Everything a widget / integration test needs to run the real app against
 /// the mock with zero latency and in-memory storage.
@@ -40,6 +43,7 @@ class TestHarness {
     DateTime? now,
     Duration latency = Duration.zero,
     bool encrypted = true,
+    bool useMock = true,
   }) async {
     tzdata.initializeTimeZones();
     // Synchronous on purpose: real async I/O never completes inside the
@@ -68,6 +72,8 @@ class TestHarness {
     final connectivity = FakeConnectivityService();
     final container = ProviderContainer(
       overrides: [
+        useMockApiProvider.overrideWithValue(useMock),
+        localStorageProvider.overrideWithValue(InMemoryLocalStorage()),
         clockProvider.overrideWithValue(clock),
         secureStoreProvider.overrideWithValue(secure),
         appDatabaseProvider.overrideWithValue(db),

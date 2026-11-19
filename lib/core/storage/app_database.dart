@@ -1,8 +1,21 @@
+import 'dart:io';
+
 import 'package:drift/drift.dart';
-import 'package:drift_flutter/drift_flutter.dart';
+import 'package:drift/native.dart';
 import 'package:field_crm/core/mock/mock_state_store.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
+import 'package:sqlcipher_flutter_libs/sqlcipher_flutter_libs.dart';
+import 'package:sqlite3/open.dart';
 
 part 'app_database.g.dart';
+
+@pragma('vm:entry-point')
+void _setupSqlCipher() {
+  if (Platform.isAndroid) {
+    open.overrideFor(OperatingSystem.android, openCipherOnAndroid);
+  }
+}
 
 /// Encrypted local store. Holds only the pending-write queue and the mock's
 /// snapshot — it is not an offline cache of server data.
@@ -36,13 +49,23 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
 
   /// Opens (or creates) the SQLCipher-encrypted file database.
-  factory AppDatabase.open({required String name, required String key}) =>
-      AppDatabase(
-        driftDatabase(
-          name: name,
-          native: DriftNativeOptions(setup: (db) => applyKey(db, key)),
-        ),
-      );
+  factory AppDatabase.open({required String name, required String key}) {
+    _setupSqlCipher();
+    return AppDatabase(
+      LazyDatabase(() async {
+        await applyWorkaroundToOpenSqlCipherOnOldAndroidVersions();
+        final dbFolder = await getApplicationDocumentsDirectory();
+        final file = File(p.join(dbFolder.path, '$name.sqlite'));
+        return NativeDatabase.createInBackground(
+          file,
+          isolateSetup: _setupSqlCipher,
+          setup: (db) => applyKey(db, key),
+        );
+      }),
+    );
+  }
+
+
 
   @override
   int get schemaVersion => 1;
@@ -55,7 +78,7 @@ class AppDatabase extends _$AppDatabase {
     db.execute("pragma key = '${key.replaceAll("'", "''")}'");
     // ignore: avoid_dynamic_calls, reason above
     final rows = db.select('pragma cipher_version') as List;
-    if (rows.isEmpty) {
+    if (rows.isEmpty && (Platform.isAndroid || Platform.isIOS)) {
       throw StateError('SQLCipher is not available; refusing unencrypted DB');
     }
   }

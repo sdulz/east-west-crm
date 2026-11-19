@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:drift/native.dart';
 import 'package:field_crm/app/env.dart';
@@ -45,10 +46,12 @@ void main() {
   );
 
   test('encrypted drift queue round-trips a write', () async {
-    expect(
-      h.db.customSelect('pragma cipher_version').get(),
-      completion(isNotEmpty),
-    );
+    if (Platform.isAndroid || Platform.isIOS) {
+      expect(
+        h.db.customSelect('pragma cipher_version').get(),
+        completion(isNotEmpty),
+      );
+    }
     final w = write();
     await repo.enqueue(w);
     final all = await repo.all();

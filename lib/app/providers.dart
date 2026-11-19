@@ -1,142 +1,188 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:field_crm/core/clock.dart';
 import 'package:field_crm/core/connectivity/connectivity_service.dart';
 import 'package:field_crm/core/mock/mock_store.dart';
+import 'package:field_crm/core/network/crm_api_client.dart';
 import 'package:field_crm/core/notifications/push_notification_service.dart';
 import 'package:field_crm/core/notifications/reminder_scheduler.dart';
 import 'package:field_crm/core/storage/app_database.dart';
 import 'package:field_crm/core/storage/biometric_auth.dart';
 import 'package:field_crm/core/storage/key_value_store.dart';
 import 'package:field_crm/core/storage/secure_store.dart';
+import 'package:field_crm/features/activities/data/api_activity_repository.dart';
 import 'package:field_crm/features/activities/data/mock_activity_repository.dart';
 import 'package:field_crm/features/activities/domain/activity_repository.dart';
+import 'package:field_crm/features/auth/data/api_auth_repository.dart';
 import 'package:field_crm/features/auth/data/mock_auth_repository.dart';
 import 'package:field_crm/features/auth/domain/auth_repository.dart';
+import 'package:field_crm/features/customers/data/api_customer_repository.dart';
 import 'package:field_crm/features/customers/data/mock_customer_repository.dart';
 import 'package:field_crm/features/customers/domain/customer_repository.dart';
+import 'package:field_crm/features/dashboard/data/api_dashboard_repository.dart';
 import 'package:field_crm/features/dashboard/data/mock_dashboard_repository.dart';
 import 'package:field_crm/features/dashboard/domain/dashboard_repository.dart';
+import 'package:field_crm/features/handover/data/api_user_directory_repository.dart';
 import 'package:field_crm/features/handover/data/mock_user_directory_repository.dart';
 import 'package:field_crm/features/handover/domain/user_directory_repository.dart';
+import 'package:field_crm/features/history/data/api_history_repository.dart';
 import 'package:field_crm/features/history/data/mock_history_repository.dart';
 import 'package:field_crm/features/history/domain/history_repository.dart';
 import 'package:field_crm/features/notifications/data/mock_notification_repository.dart';
 import 'package:field_crm/features/notifications/domain/notification_repository.dart';
+import 'package:field_crm/features/opportunities/data/api_opportunity_repository.dart';
 import 'package:field_crm/features/opportunities/data/mock_opportunity_repository.dart';
 import 'package:field_crm/features/opportunities/domain/opportunity_repository.dart';
 import 'package:field_crm/features/pending/data/drift_pending_queue_repository.dart';
 import 'package:field_crm/features/pending/domain/pending_queue_repository.dart';
+import 'package:field_crm/features/pipeline/data/api_pipeline_repository.dart';
 import 'package:field_crm/features/pipeline/data/mock_pipeline_repository.dart';
 import 'package:field_crm/features/pipeline/domain/pipeline_repository.dart';
 import 'package:field_crm/features/quotations/data/mock_quotation_repository.dart';
 import 'package:field_crm/features/quotations/domain/quotation_repository.dart';
+import 'package:field_crm/features/search/data/api_search_repository.dart';
 import 'package:field_crm/features/search/data/mock_search_repository.dart';
 import 'package:field_crm/features/search/domain/search_repository.dart';
+import 'package:field_crm/features/team/data/api_team_repository.dart';
 import 'package:field_crm/features/team/data/mock_team_repository.dart';
 import 'package:field_crm/features/team/domain/team_repository.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
-
-part 'providers.g.dart';
 
 // ---------------------------------------------------------------------------
 // Infrastructure. Bootstrap overrides the ones that need async setup.
 // ---------------------------------------------------------------------------
 
-@Riverpod(keepAlive: true)
-Clock clock(Ref ref) => const Clock();
+final clockProvider = Provider<Clock>((ref) => const Clock());
 
-@Riverpod(keepAlive: true)
-SecureStore secureStore(Ref ref) => FlutterSecureStore();
+final secureStoreProvider = Provider<SecureStore>((ref) => FlutterSecureStore());
 
-@Riverpod(keepAlive: true)
-BiometricAuth biometricAuth(Ref ref) => LocalAuthBiometricAuth();
+final biometricAuthProvider = Provider<BiometricAuth>((ref) => LocalAuthBiometricAuth());
 
-@Riverpod(keepAlive: true)
-ConnectivityService connectivityService(Ref ref) => PlusConnectivityService();
+final connectivityServiceProvider = Provider<ConnectivityService>((ref) => PlusConnectivityService());
 
-@Riverpod(keepAlive: true)
-ReminderScheduler reminderScheduler(Ref ref) => LocalReminderScheduler();
+final reminderSchedulerProvider = Provider<ReminderScheduler>((ref) => LocalReminderScheduler());
 
-@Riverpod(keepAlive: true)
-PushNotificationService pushNotificationService(Ref ref) =>
-    const NoopPushNotificationService();
+final pushNotificationServiceProvider = Provider<PushNotificationService>(
+  (ref) => const NoopPushNotificationService(),
+);
 
-@Riverpod(keepAlive: true)
-AppDatabase appDatabase(Ref ref) =>
-    throw UnimplementedError('Overridden in bootstrap');
+final appDatabaseProvider = Provider<AppDatabase>((ref) =>
+    throw UnimplementedError('Overridden in bootstrap'));
 
-@Riverpod(keepAlive: true)
-KeyValueStore keyValueStore(Ref ref) =>
-    DriftKeyValueStore(ref.watch(appDatabaseProvider));
+final keyValueStoreProvider = Provider<KeyValueStore>((ref) =>
+    DriftKeyValueStore(ref.watch(appDatabaseProvider)));
 
-@Riverpod(keepAlive: true)
-MockStore mockStore(Ref ref) =>
-    throw UnimplementedError('Overridden in bootstrap');
+final mockStoreProvider = Provider<MockStore>((ref) =>
+    throw UnimplementedError('Overridden in bootstrap'));
+
+/// Controls whether repositories use the East West CRM REST API (`false`,
+/// default) or the offline `MockStore` (`true`, used in widget/unit tests or
+/// when launched with `--dart-define=USE_MOCK=true`).
+final useMockApiProvider = Provider<bool>(
+  (ref) => const bool.fromEnvironment('USE_MOCK', defaultValue: false),
+);
 
 // ---------------------------------------------------------------------------
-// Repositories. THIS is the only file to touch when a real backend arrives:
-// return the real implementations here and nothing above the domain changes.
+// Repositories.
 // ---------------------------------------------------------------------------
 
-@Riverpod(keepAlive: true)
-AuthRepository authRepository(Ref ref) =>
-    MockAuthRepository(ref.watch(mockStoreProvider));
+final authRepositoryProvider = Provider<AuthRepository>((ref) {
+  if (ref.watch(useMockApiProvider)) {
+    return MockAuthRepository(ref.watch(mockStoreProvider));
+  }
+  return ApiAuthRepository(ref.watch(crmApiClientProvider));
+});
 
-@Riverpod(keepAlive: true)
-DashboardRepository dashboardRepository(Ref ref) =>
-    MockDashboardRepository(ref.watch(mockStoreProvider));
+final customerRepositoryProvider = Provider<CustomerRepository>((ref) {
+  if (ref.watch(useMockApiProvider)) {
+    return MockCustomerRepository(ref.watch(mockStoreProvider));
+  }
+  return ApiCustomerRepository(ref.watch(crmApiClientProvider));
+});
 
-@Riverpod(keepAlive: true)
-SearchRepository searchRepository(Ref ref) =>
-    MockSearchRepository(ref.watch(mockStoreProvider));
+final opportunityRepositoryProvider = Provider<OpportunityRepository>((ref) {
+  if (ref.watch(useMockApiProvider)) {
+    return MockOpportunityRepository(ref.watch(mockStoreProvider));
+  }
+  return ApiOpportunityRepository(ref.watch(crmApiClientProvider));
+});
 
-@Riverpod(keepAlive: true)
-CustomerRepository customerRepository(Ref ref) =>
-    MockCustomerRepository(ref.watch(mockStoreProvider));
+final pipelineRepositoryProvider = Provider<PipelineRepository>((ref) {
+  if (ref.watch(useMockApiProvider)) {
+    return MockPipelineRepository(ref.watch(mockStoreProvider));
+  }
+  return ApiPipelineRepository(ref.watch(crmApiClientProvider));
+});
 
-@Riverpod(keepAlive: true)
-OpportunityRepository opportunityRepository(Ref ref) =>
-    MockOpportunityRepository(ref.watch(mockStoreProvider));
+final activityRepositoryProvider = Provider<ActivityRepository>((ref) {
+  if (ref.watch(useMockApiProvider)) {
+    return MockActivityRepository(ref.watch(mockStoreProvider));
+  }
+  return ApiActivityRepository(ref.watch(crmApiClientProvider));
+});
 
-@Riverpod(keepAlive: true)
-PipelineRepository pipelineRepository(Ref ref) =>
-    MockPipelineRepository(ref.watch(mockStoreProvider));
+final dashboardRepositoryProvider = Provider<DashboardRepository>((ref) {
+  if (ref.watch(useMockApiProvider)) {
+    return MockDashboardRepository(ref.watch(mockStoreProvider));
+  }
+  return ApiDashboardRepository(
+    client: ref.watch(crmApiClientProvider),
+    opportunityRepository: ref.watch(opportunityRepositoryProvider),
+    activityRepository: ref.watch(activityRepositoryProvider),
+    pipelineRepository: ref.watch(pipelineRepositoryProvider),
+  );
+});
 
-@Riverpod(keepAlive: true)
-ActivityRepository activityRepository(Ref ref) =>
-    MockActivityRepository(ref.watch(mockStoreProvider));
+final searchRepositoryProvider = Provider<SearchRepository>((ref) {
+  if (ref.watch(useMockApiProvider)) {
+    return MockSearchRepository(ref.watch(mockStoreProvider));
+  }
+  return ApiSearchRepository(ref.watch(crmApiClientProvider));
+});
 
-@Riverpod(keepAlive: true)
-HistoryRepository historyRepository(Ref ref) =>
-    MockHistoryRepository(ref.watch(mockStoreProvider));
+final historyRepositoryProvider = Provider<HistoryRepository>((ref) {
+  if (ref.watch(useMockApiProvider)) {
+    return MockHistoryRepository(ref.watch(mockStoreProvider));
+  }
+  return ApiHistoryRepository(ref.watch(crmApiClientProvider));
+});
 
-@Riverpod(keepAlive: true)
-UserDirectoryRepository userDirectoryRepository(Ref ref) =>
-    MockUserDirectoryRepository(ref.watch(mockStoreProvider));
+final userDirectoryRepositoryProvider = Provider<UserDirectoryRepository>((ref) {
+  if (ref.watch(useMockApiProvider)) {
+    return MockUserDirectoryRepository(ref.watch(mockStoreProvider));
+  }
+  return ApiUserDirectoryRepository(ref.watch(crmApiClientProvider));
+});
 
-@Riverpod(keepAlive: true)
-NotificationRepository notificationRepository(Ref ref) =>
-    MockNotificationRepository(ref.watch(mockStoreProvider));
+final notificationRepositoryProvider = Provider<NotificationRepository>((ref) =>
+    MockNotificationRepository(ref.watch(mockStoreProvider)));
 
-@Riverpod(keepAlive: true)
-QuotationRepository quotationRepository(Ref ref) =>
-    MockQuotationRepository(ref.watch(mockStoreProvider));
+final quotationRepositoryProvider = Provider<QuotationRepository>((ref) =>
+    MockQuotationRepository(ref.watch(mockStoreProvider)));
 
-@Riverpod(keepAlive: true)
-TeamRepository teamRepository(Ref ref) =>
-    MockTeamRepository(ref.watch(mockStoreProvider));
+final teamRepositoryProvider = Provider<TeamRepository>((ref) {
+  if (ref.watch(useMockApiProvider)) {
+    return MockTeamRepository(ref.watch(mockStoreProvider));
+  }
+  return ApiTeamRepository(
+    client: ref.watch(crmApiClientProvider),
+    opportunityRepository: ref.watch(opportunityRepositoryProvider),
+    activityRepository: ref.watch(activityRepositoryProvider),
+    pipelineRepository: ref.watch(pipelineRepositoryProvider),
+  );
+});
 
-@Riverpod(keepAlive: true)
-PendingQueueRepository pendingQueueRepository(Ref ref) =>
-    DriftPendingQueueRepository(ref.watch(appDatabaseProvider));
+final pendingQueueRepositoryProvider = Provider<PendingQueueRepository>((ref) =>
+    DriftPendingQueueRepository(ref.watch(appDatabaseProvider)));
 
 // ---------------------------------------------------------------------------
 // Cross-feature refresh signal. Any confirmed write bumps it; list providers
 // watch it so they reload from the repository (never from local state).
 // ---------------------------------------------------------------------------
 
-@Riverpod(keepAlive: true)
-class RefreshTick extends _$RefreshTick {
-  @override
-  int build() => 0;
+class RefreshTickNotifier extends StateNotifier<int> {
+  RefreshTickNotifier() : super(0);
   void bump() => state++;
 }
+
+final refreshTickProvider = StateNotifierProvider<RefreshTickNotifier, int>(
+  (ref) => RefreshTickNotifier(),
+);

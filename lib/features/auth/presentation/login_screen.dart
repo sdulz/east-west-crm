@@ -9,7 +9,9 @@ import 'package:field_crm/core/widgets/section.dart';
 import 'package:field_crm/features/auth/application/auth_controller.dart';
 import 'package:field_crm/features/auth/data/mock_auth_repository.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 
 /// FR-MOB-001.
 class LoginScreen extends ConsumerStatefulWidget {
@@ -58,11 +60,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final r = await ref
         .read(authControllerProvider.notifier)
         .login(
-          email: _email.text,
+          email: _email.text.trim(),
           password: _password.text,
           rememberMe: _remember,
         );
     if (!mounted) return;
+    if (r case Ok()) {
+      TextInput.finishAutofillContext();
+    }
     final l = context.l10n;
     setState(() {
       _busy = false;
@@ -72,7 +77,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           error: ValidationFailure(message: MockAuthRepository.inactiveAccount),
         ) =>
           l.loginInactive,
-        Err(error: ValidationFailure()) => l.loginInvalid,
+        Err(
+          error: ValidationFailure(
+            message: MockAuthRepository.invalidCredentials,
+          ),
+        ) =>
+          l.loginInvalid,
+        Err(error: ValidationFailure(:final message)) =>
+          message.isNotEmpty ? message : l.loginInvalid,
         Err(:final error) => failureMessage(context, error),
       };
     });
@@ -175,20 +187,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           icon: const Icon(Icons.fingerprint),
                           label: Text(l.unlockWithBiometrics),
                         ),
-                      if (AppEnv.isDev) ...[
-                        const SizedBox(height: 24),
-                        Text(
-                          'dev: sita@fieldcrm.test / ram@fieldcrm.test / '
-                          'maya@fieldcrm.test — password "password"',
-                          textAlign: TextAlign.center,
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onSurfaceVariant,
-                              ),
-                        ),
-                      ],
                     ],
                   ),
                 ),

@@ -66,10 +66,10 @@ class _OpportunityDetailScreenState
     final id = widget.id;
     final opp = ref.watch(opportunityDetailProvider(id));
     final perms = ref.watch(permissionsProvider);
-    final stages = ref.watch(stagesProvider).value ?? const <PipelineStage>[];
+    final stages = ref.watch(stagesProvider).valueOrNull ?? const <PipelineStage>[];
     final f = ref.watch(formattersProvider);
-    final users = ref.watch(userNamesProvider).value ?? const {};
-    final customers = ref.watch(customerNamesProvider).value ?? const {};
+    final users = ref.watch(userNamesProvider).valueOrNull ?? const {};
+    final customers = ref.watch(customerNamesProvider).valueOrNull ?? const {};
 
     return Scaffold(
       appBar: AppBar(

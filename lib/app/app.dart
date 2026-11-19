@@ -1,41 +1,96 @@
 import 'dart:async';
 
 import 'package:field_crm/app/env.dart';
-import 'package:field_crm/app/router.dart';
 import 'package:field_crm/app/theme.dart';
+import 'package:field_crm/common/constant/color_constant_dark_mode.dart';
+import 'package:field_crm/common/constant/key_constant.dart';
+import 'package:field_crm/common/constant/size_constant.dart';
+import 'package:field_crm/common/controller/theme_controller.dart';
+import 'package:field_crm/common/route/route_manager.dart';
 import 'package:field_crm/core/l10n/generated/app_localizations.dart';
 import 'package:field_crm/features/auth/application/auth_controller.dart';
 import 'package:field_crm/features/pending/application/reconnect_retry.dart';
 import 'package:field_crm/features/profile/application/settings_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
 
-class FieldCrmApp extends ConsumerWidget {
-  const FieldCrmApp({super.key});
+class MyApp extends ConsumerStatefulWidget {
+  const MyApp({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final router = ref.watch(routerProvider);
-    final settings =
-        ref.watch(settingsControllerProvider).value ?? const AppSettings();
-    ref.watch(reconnectRetryProvider); // keep the reconnect watcher alive
-    Intl.defaultLocale = settings.locale?.languageCode;
-    return MaterialApp.router(
-      title: AppEnv.appName,
-      theme: AppTheme.light(),
-      darkTheme: AppTheme.dark(),
-      themeMode: settings.themeMode,
-      locale: settings.locale,
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
-      supportedLocales: AppLocalizations.supportedLocales,
-      routerConfig: router,
-      builder: (context, child) => InactivityGuard(
-        child: PrivacyScreen(child: child ?? const SizedBox.shrink()),
+  ConsumerState<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends ConsumerState<MyApp> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(reconnectRetryProvider);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final routes = RouteManager().goRouter(ref, CommonConstants.navKey);
+
+    return ScreenUtilInit(
+      designSize: SizeConstants.screenSize,
+      minTextAdapt: true,
+      splitScreenMode: true,
+      child: Consumer(
+        builder: (context, ref, _) {
+          final settings = ref.watch(settingsControllerProvider).valueOrNull ??
+              const AppSettings();
+          final themeMode = ref.watch(themeProvider);
+
+          ThemeMode mappedThemeMode;
+          switch (themeMode) {
+            case AppThemeMode.light:
+              mappedThemeMode = ThemeMode.light;
+              currentTheme = AppColorConstant.light;
+              break;
+            case AppThemeMode.dark:
+              mappedThemeMode = ThemeMode.dark;
+              currentTheme = AppColorConstant.dark;
+              break;
+            case AppThemeMode.system:
+              mappedThemeMode = settings.themeMode;
+              final brightness =
+                  View.of(context).platformDispatcher.platformBrightness;
+              currentTheme = brightness == Brightness.light
+                  ? AppColorConstant.light
+                  : AppColorConstant.dark;
+              break;
+          }
+
+          Intl.defaultLocale = settings.locale?.languageCode;
+
+          return MaterialApp.router(
+            key: ValueKey(mappedThemeMode),
+            debugShowCheckedModeBanner: false,
+            title: AppEnv.appName,
+            theme: AppTheme.light(),
+            darkTheme: AppTheme.dark(),
+            themeMode: mappedThemeMode,
+            locale: settings.locale,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            routerConfig: routes,
+            builder: (context, child) => InactivityGuard(
+              child: PrivacyScreen(child: child ?? const SizedBox.shrink()),
+            ),
+          );
+        },
       ),
     );
   }
 }
+
+typedef FieldCrmApp = MyApp;
+
 
 /// Locks the session after [AppEnv.inactivityTimeoutMinutes] without input.
 class InactivityGuard extends ConsumerStatefulWidget {

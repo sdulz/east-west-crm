@@ -1,37 +1,36 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:field_crm/app/providers.dart';
 import 'package:field_crm/core/result/result.dart';
 import 'package:field_crm/features/auth/application/auth_controller.dart';
 import 'package:field_crm/features/customers/domain/customer.dart';
 import 'package:field_crm/features/pending/application/write_coordinator.dart';
 import 'package:field_crm/features/pending/domain/pending_write.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-part 'customer_controllers.g.dart';
-
-/// FR-MOB-004. Kept alive: tab switches must not refetch.
-@Riverpod(keepAlive: true)
-Future<List<Customer>> customerList(Ref ref, {String? query}) {
+final _customerListFamily =
+    FutureProvider.family<List<Customer>, String?>((ref, query) {
   ref
     ..watch(refreshTickProvider)
     ..watch(currentUserProvider);
   return ref.watch(customerRepositoryProvider).list(query: query).orThrow;
+});
+
+FutureProvider<List<Customer>> customerListProvider({String? query}) {
+  final q = (query == null || query.trim().isEmpty) ? null : query.trim();
+  return _customerListFamily(q);
 }
 
-@Riverpod(keepAlive: true)
-Future<Customer> customerDetail(Ref ref, String id) {
+final customerDetailProvider =
+    FutureProvider.family<Customer, String>((ref, id) {
   ref.watch(refreshTickProvider);
   return ref.watch(customerRepositoryProvider).getById(id).orThrow;
-}
+});
 
-/// id -> name for quick lookups in opportunity lists and search.
-@riverpod
-Future<Map<String, String>> customerNames(Ref ref) async {
+final customerNamesProvider = FutureProvider<Map<String, String>>((ref) async {
   final list = await ref.watch(customerListProvider().future);
   return {for (final c in list) c.id: c.name};
-}
+});
 
-@Riverpod(keepAlive: true)
-class CustomerSaver extends _$CustomerSaver {
+class CustomerSaver extends Notifier<void> {
   @override
   void build() {}
 
@@ -41,9 +40,7 @@ class CustomerSaver extends _$CustomerSaver {
     DateTime? expectedUpdatedAt,
   }) async {
     final repo = ref.read(customerRepositoryProvider);
-    final outcome = await ref
-        .read(writeCoordinatorProvider)
-        .run<Customer>(
+    final outcome = await ref.read(writeCoordinatorProvider).run<Customer>(
           operation: isNew
               ? WriteOperation.customerCreate
               : WriteOperation.customerUpdate,
@@ -61,3 +58,6 @@ class CustomerSaver extends _$CustomerSaver {
     return outcome;
   }
 }
+
+final customerSaverProvider =
+    NotifierProvider<CustomerSaver, void>(CustomerSaver.new);

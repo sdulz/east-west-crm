@@ -28,8 +28,8 @@ import 'package:field_crm/features/quotations/presentation/quotation_widgets.dar
 import 'package:field_crm/features/search/presentation/search_screen.dart';
 import 'package:field_crm/features/team/presentation/team_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'router.g.dart';
 
@@ -343,8 +343,7 @@ class ProfileRoute extends GoRouteData with $ProfileRoute {
 // Router with auth / lock redirects
 // ---------------------------------------------------------------------------
 
-@Riverpod(keepAlive: true)
-GoRouter router(Ref ref) {
+final routerProvider = Provider<GoRouter>((ref) {
   final refresh = ValueNotifier(0);
   ref
     ..listen(authControllerProvider, (_, _) => refresh.value++)
@@ -371,4 +370,4 @@ GoRouter router(Ref ref) {
       return null;
     },
   );
-}
+});

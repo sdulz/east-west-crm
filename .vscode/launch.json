@@ -1,0 +1,45 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Field CRM Staging",
+            "request": "launch",
+            "type": "dart",
+            "program": "lib/main.dart",
+            "args": [
+                "--flavor=staging",
+                "--dart-define=APIType=staging"
+            ]
+        },
+        {
+            "name": "Field CRM Local",
+            "request": "launch",
+            "type": "dart",
+            "program": "lib/main.dart",
+            "args": [
+                "--flavor=staging",
+                "--dart-define=APIType=local"
+            ]
+        },
+        {
+            "name": "Field CRM UAT",
+            "request": "launch",
+            "type": "dart",
+            "program": "lib/main.dart",
+            "args": [
+                "--flavor=uat",
+                "--dart-define=APIType=uat"
+            ]
+        },
+        {
+            "name": "Field CRM Prod",
+            "request": "launch",
+            "type": "dart",
+            "program": "lib/main.dart",
+            "args": [
+                "--flavor=production",
+                "--dart-define=APIType=prod"
+            ]
+        }
+    ]
+}

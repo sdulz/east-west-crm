@@ -1,23 +1,16 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:field_crm/app/providers.dart';
 import 'package:field_crm/core/clock.dart';
 import 'package:field_crm/core/notifications/reminder_scheduler.dart';
 import 'package:field_crm/features/activities/domain/activity.dart';
 import 'package:field_crm/features/auth/application/auth_controller.dart';
-import 'package:intl/intl.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-part 'reminder_sync.g.dart';
-
-/// FR-MOB-012. Reschedules local reminders for follow-ups due in the next
-/// [window]. Text is neutral: no names, phones or amounts.
-@Riverpod(keepAlive: true)
-class ReminderSync extends _$ReminderSync {
-  static const window = Duration(days: 7);
-
+class ReminderSync extends Notifier<void> {
   @override
   void build() {}
+  static const window = Duration(days: 7);
 
-  /// Stable int id per activity for the OS notification table.
   static int notificationId(String activityId) =>
       activityId.hashCode & 0x7fffffff;
 
@@ -51,3 +44,6 @@ class ReminderSync extends _$ReminderSync {
   Future<void> cancelFor(String activityId) =>
       ref.read(reminderSchedulerProvider).cancel(notificationId(activityId));
 }
+
+final reminderSyncProvider =
+    NotifierProvider<ReminderSync, void>(ReminderSync.new);

@@ -1,16 +1,12 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:field_crm/app/providers.dart';
 import 'package:field_crm/core/result/result.dart';
 import 'package:field_crm/features/pipeline/domain/pipeline_stage.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-part 'pipeline_controllers.g.dart';
+final stagesProvider = FutureProvider<List<PipelineStage>>((ref) =>
+    ref.watch(pipelineRepositoryProvider).stages().orThrow);
 
-@Riverpod(keepAlive: true)
-Future<List<PipelineStage>> stages(Ref ref) =>
-    ref.watch(pipelineRepositoryProvider).stages().orThrow;
-
-@riverpod
-Future<Map<String, PipelineStage>> stagesById(Ref ref) async {
+final stagesByIdProvider = FutureProvider<Map<String, PipelineStage>>((ref) async {
   final list = await ref.watch(stagesProvider.future);
   return {for (final s in list) s.id: s};
-}
+});

@@ -1,25 +1,24 @@
 import 'dart:async';
-
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:field_crm/app/providers.dart';
 import 'package:field_crm/features/search/domain/search_results.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-part 'search_controller.g.dart';
+final searchControllerProvider =
+    StateNotifierProvider<SearchController, AsyncValue<SearchResults>>(
+  SearchController.new,
+);
 
-/// FR-MOB-003: 300 ms debounce, grouped results.
-@riverpod
-class SearchController extends _$SearchController {
+class SearchController extends StateNotifier<AsyncValue<SearchResults>> {
+  SearchController(this.ref) : super(const AsyncData(SearchResults())) {
+    ref.onDispose(() => _timer?.cancel());
+  }
+
+  final Ref ref;
   static const debounce = Duration(milliseconds: 300);
   Timer? _timer;
   String _query = '';
 
   String get query => _query;
-
-  @override
-  AsyncValue<SearchResults> build() {
-    ref.onDispose(() => _timer?.cancel());
-    return const AsyncData(SearchResults());
-  }
 
   void setQuery(String q) {
     _query = q;
@@ -34,7 +33,13 @@ class SearchController extends _$SearchController {
 
   Future<void> _run(String q) async {
     final r = await ref.read(searchRepositoryProvider).search(q);
-    if (_query != q) return; // stale
+    if (_query != q) return;
     state = r.fold(AsyncData.new, (f) => AsyncError(f, StackTrace.current));
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
   }
 }

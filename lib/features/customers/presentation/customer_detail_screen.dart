@@ -182,7 +182,7 @@ class _CustomerOpportunities extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final opps = ref.watch(opportunityListProvider(customerId: customerId));
-    final stages = ref.watch(stagesByIdProvider).value ?? const {};
+    final stages = ref.watch(stagesByIdProvider).valueOrNull ?? const {};
     final f = ref.watch(formattersProvider);
     return AsyncView(
       value: opps,
