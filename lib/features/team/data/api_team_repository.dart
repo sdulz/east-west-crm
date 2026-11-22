@@ -1,3 +1,4 @@
+import 'package:field_crm/common/constant/api_constant.dart';
 import 'package:field_crm/core/network/crm_api_client.dart';
 import 'package:field_crm/core/result/failure.dart';
 import 'package:field_crm/core/result/result.dart';
@@ -31,13 +32,46 @@ class ApiTeamRepository implements TeamRepository {
       return const Err(Failure.permissionDenied());
     }
 
-    final stagesRes = await pipelineRepository.stages();
+    final teamsFuture = client.get<List<Team>>(
+      ApiConstant.crmTeamsUrl,
+      parse: (raw) {
+        final map = Map<String, dynamic>.from(raw as Map);
+        final list = (map['data'] as List?) ?? const [];
+        return [
+          for (final item in list)
+            if (item is Map)
+              client.parseTeam(Map<String, dynamic>.from(item)),
+        ];
+      },
+    );
+
+    final usersFuture = client.get<List<AppUser>>(
+      ApiConstant.usersUrl,
+      parse: (raw) {
+        final map = Map<String, dynamic>.from(raw as Map);
+        final list = (map['data'] as List?) ?? const [];
+        return [
+          for (final item in list)
+            if (item is Map)
+              client.parseUser(Map<String, dynamic>.from(item)),
+        ];
+      },
+    );
+
+    final stagesFuture = pipelineRepository.stages();
+    final oppsFuture = opportunityRepository.list();
+    final actsFuture = activityRepository.list();
+
+    final teamsRes = await teamsFuture;
+    final usersRes = await usersFuture;
+
+    final stagesRes = await stagesFuture;
     if (stagesRes case Err(:final error)) return Err(error);
 
-    final oppsRes = await opportunityRepository.list();
+    final oppsRes = await oppsFuture;
     if (oppsRes case Err(:final error)) return Err(error);
 
-    final actsRes = await activityRepository.list();
+    final actsRes = await actsFuture;
     if (actsRes case Err(:final error)) return Err(error);
 
     final stages = (stagesRes as Ok<List<PipelineStage>, Failure>).value;
@@ -50,12 +84,23 @@ class ApiTeamRepository implements TeamRepository {
         .toSet();
     final now = DateTime.now().toUtc();
 
-    final membersById = <String, AppUser>{...client.usersById};
+    final membersById = <String, AppUser>{
+      ...client.usersById,
+      if (usersRes case Ok(:final value))
+        for (final u in value) u.id: u,
+    };
     if (me != null) {
       membersById.putIfAbsent(me.id, () => me);
     }
 
-    final team = client.teamsById.values.firstOrNull ??
+    final teams = switch (teamsRes) {
+      Ok(:final value) when value.isNotEmpty => value,
+      _ => client.teamsById.values.toList(),
+    };
+
+    final team =
+        teams.where((t) => t.id == me?.teamId).firstOrNull ??
+        teams.firstOrNull ??
         Team(
           id: me?.teamId ?? '1',
           name: 'Sales Team',

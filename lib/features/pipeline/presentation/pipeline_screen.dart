@@ -407,8 +407,9 @@ class _Card extends ConsumerWidget {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     final f = ref.watch(formattersProvider);
-    final customer = ref.watch(customerNamesProvider).value?[o.customerId];
-    final owner = ref.watch(userNamesProvider).value?[o.ownerId];
+    final customer =
+        ref.watch(customerNamesProvider).valueOrNull?[o.customerId];
+    final owner = ref.watch(userNamesProvider).valueOrNull?[o.ownerId];
     return Material(
       key: Key('card_${o.id}'),
       color: scheme.surfaceContainerHigh,

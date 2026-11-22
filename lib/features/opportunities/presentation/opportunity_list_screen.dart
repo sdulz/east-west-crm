@@ -95,9 +95,10 @@ class OpportunityRow extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final f = ref.watch(formattersProvider);
-    final stage = ref.watch(stagesByIdProvider).value?[o.stageId];
-    final customer = ref.watch(customerNamesProvider).value?[o.customerId];
-    final owner = ref.watch(userNamesProvider).value?[o.ownerId];
+    final stage = ref.watch(stagesByIdProvider).valueOrNull?[o.stageId];
+    final customer =
+        ref.watch(customerNamesProvider).valueOrNull?[o.customerId];
+    final owner = ref.watch(userNamesProvider).valueOrNull?[o.ownerId];
     return ListTile(
       key: Key('opportunity_${o.id}'),
       selected: selected,

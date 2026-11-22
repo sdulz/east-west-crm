@@ -21,6 +21,7 @@ class ApiCustomerRepository implements CustomerRepository {
     'city': 'city',
     'zip': 'address',
     'country': 'country',
+    'vat': 'taxId',
     'company_id': 'parentId',
   };
 
@@ -75,6 +76,7 @@ class ApiCustomerRepository implements CustomerRepository {
         'street': customer.address,
         'city': customer.city,
         'country': customer.country,
+        if (customer.taxId != null) 'vat': customer.taxId,
         if (companyId != null) 'company_id': companyId,
       },
       fieldMap: _fieldMap,
@@ -106,6 +108,7 @@ class ApiCustomerRepository implements CustomerRepository {
         'street': customer.address,
         'city': customer.city,
         'country': customer.country,
+        'vat': customer.taxId,
         'company_id': companyId,
       },
       fieldMap: _fieldMap,

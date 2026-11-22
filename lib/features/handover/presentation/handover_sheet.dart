@@ -105,9 +105,9 @@ class _HandoverSheetState extends ConsumerState<HandoverSheet> {
               key: const Key('handover_confirm'),
               saving: _saving,
               label: l.handover,
-              onPressed: _selected == null || users.value == null
+              onPressed: _selected == null || users.valueOrNull == null
                   ? null
-                  : () => _confirm(users.value!),
+                  : () => _confirm(users.valueOrNull!),
             ),
           ],
         ),

@@ -15,7 +15,7 @@ final notificationListProvider =
 final unreadNotificationCountProvider = Provider<int>((ref) =>
     ref
         .watch(notificationListProvider)
-        .value
+        .valueOrNull
         ?.where((n) => n.isUnread)
         .length ??
     0);

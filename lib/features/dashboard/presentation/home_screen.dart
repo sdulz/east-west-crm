@@ -3,12 +3,15 @@ import 'dart:async';
 import 'package:field_crm/app/providers.dart';
 import 'package:field_crm/app/router.dart';
 import 'package:field_crm/core/format/app_formatters.dart';
+import 'package:field_crm/core/network/crm_api_client.dart';
 import 'package:field_crm/core/widgets/async_view.dart';
 import 'package:field_crm/core/widgets/failure_text.dart';
 import 'package:field_crm/core/widgets/section.dart';
 import 'package:field_crm/features/activities/application/reminder_sync.dart';
+import 'package:field_crm/features/activities/domain/activity.dart';
 import 'package:field_crm/features/activities/presentation/activity_tile.dart';
 import 'package:field_crm/features/auth/application/auth_controller.dart';
+import 'package:field_crm/features/customers/application/customer_controllers.dart';
 import 'package:field_crm/features/dashboard/application/dashboard_controller.dart';
 import 'package:field_crm/features/dashboard/domain/dashboard_summary.dart';
 import 'package:field_crm/features/dashboard/presentation/dashboard_charts.dart';
@@ -44,9 +47,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final f = ref.watch(formattersProvider);
     final theme = Theme.of(context);
 
-    // FR-MOB-012: (re)schedule reminders on every refresh.
     ref.listen(dashboardControllerProvider, (_, next) {
-      final s = next.value;
+      final s = next.valueOrNull;
       if (s == null) return;
       unawaited(
         ref
@@ -59,7 +61,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       );
     });
     ref.listen(opportunityListProvider(), (_, next) {
-      final list = next.value;
+      final list = next.valueOrNull;
       final me = ref.read(currentUserIdProvider);
       if (list != null && me != null) {
         ref
@@ -273,10 +275,20 @@ class _OpportunityRow extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final f = ref.watch(formattersProvider);
+    final customerName =
+        ref
+            .watch(crmApiClientProvider)
+            .documentNames['${RelatedType.customer.name}:${o.customerId}'] ??
+        ref.watch(customerNamesProvider).valueOrNull?[o.customerId];
     return ListTile(
       leading: const LeadingGlyph(icon: Icons.work_outline),
       title: Text(o.title),
-      subtitle: Text(f.money(o.expectedRevenue)),
+      subtitle: Text(
+        [
+          if (customerName != null && customerName.isNotEmpty) customerName,
+          f.money(o.expectedRevenue),
+        ].join(' · '),
+      ),
       onTap: () => OpportunityDetailRoute(id: o.id).push<void>(context),
     );
   }

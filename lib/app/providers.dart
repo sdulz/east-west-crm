@@ -27,6 +27,7 @@ import 'package:field_crm/features/handover/domain/user_directory_repository.dar
 import 'package:field_crm/features/history/data/api_history_repository.dart';
 import 'package:field_crm/features/history/data/mock_history_repository.dart';
 import 'package:field_crm/features/history/domain/history_repository.dart';
+import 'package:field_crm/features/notifications/data/api_notification_repository.dart';
 import 'package:field_crm/features/notifications/data/mock_notification_repository.dart';
 import 'package:field_crm/features/notifications/domain/notification_repository.dart';
 import 'package:field_crm/features/opportunities/data/api_opportunity_repository.dart';
@@ -37,6 +38,7 @@ import 'package:field_crm/features/pending/domain/pending_queue_repository.dart'
 import 'package:field_crm/features/pipeline/data/api_pipeline_repository.dart';
 import 'package:field_crm/features/pipeline/data/mock_pipeline_repository.dart';
 import 'package:field_crm/features/pipeline/domain/pipeline_repository.dart';
+import 'package:field_crm/features/quotations/data/api_quotation_repository.dart';
 import 'package:field_crm/features/quotations/data/mock_quotation_repository.dart';
 import 'package:field_crm/features/quotations/domain/quotation_repository.dart';
 import 'package:field_crm/features/search/data/api_search_repository.dart';
@@ -152,11 +154,19 @@ final userDirectoryRepositoryProvider = Provider<UserDirectoryRepository>((ref) 
   return ApiUserDirectoryRepository(ref.watch(crmApiClientProvider));
 });
 
-final notificationRepositoryProvider = Provider<NotificationRepository>((ref) =>
-    MockNotificationRepository(ref.watch(mockStoreProvider)));
+final notificationRepositoryProvider = Provider<NotificationRepository>((ref) {
+  if (ref.watch(useMockApiProvider)) {
+    return MockNotificationRepository(ref.watch(mockStoreProvider));
+  }
+  return ApiNotificationRepository(ref.watch(crmApiClientProvider));
+});
 
-final quotationRepositoryProvider = Provider<QuotationRepository>((ref) =>
-    MockQuotationRepository(ref.watch(mockStoreProvider)));
+final quotationRepositoryProvider = Provider<QuotationRepository>((ref) {
+  if (ref.watch(useMockApiProvider)) {
+    return MockQuotationRepository(ref.watch(mockStoreProvider));
+  }
+  return ApiQuotationRepository(ref.watch(crmApiClientProvider));
+});
 
 final teamRepositoryProvider = Provider<TeamRepository>((ref) {
   if (ref.watch(useMockApiProvider)) {

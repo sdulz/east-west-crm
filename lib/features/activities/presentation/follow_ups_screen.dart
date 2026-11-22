@@ -22,7 +22,7 @@ class FollowUpsScreen extends ConsumerWidget {
     final followUps = ref.watch(myFollowUpsProvider);
     final zone = ref.watch(currentUserProvider)?.timezone ?? 'UTC';
     ref.listen(myFollowUpsProvider, (_, next) {
-      final list = next.value;
+      final list = next.valueOrNull;
       if (list != null) {
         unawaited(
           ref

@@ -108,7 +108,7 @@ class _InvoiceTileState extends ConsumerState<InvoiceTile> {
     final overdue = pending && i.dueAt.isBefore(DateTime.now().toUtc());
     String? customer;
     if (widget.showCustomer) {
-      customer = ref.watch(customerNamesProvider).value?[i.customerId];
+      customer = ref.watch(customerNamesProvider).valueOrNull?[i.customerId];
     }
     return ListTile(
       key: Key('invoice_${i.id}'),

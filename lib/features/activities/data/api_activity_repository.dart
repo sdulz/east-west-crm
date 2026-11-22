@@ -86,14 +86,14 @@ class ApiActivityRepository implements ActivityRepository {
 
     Result<List<Activity>, Failure> rawResult;
     if (f.relatedType == RelatedType.opportunity && f.relatedId != null) {
-      rawResult = await _fetchLeadActivities(f.relatedId!);
+      rawResult = await _fetchLeadActivitiesAndNotes(f.relatedId!);
     } else if (f.relatedType == RelatedType.customer && f.relatedId != null) {
-      rawResult = await _fetchCustomerActivities(
+      rawResult = await _fetchCustomerActivitiesAndNotes(
         f.relatedId!,
         includeLeads: false,
       );
     } else {
-      rawResult = await _fetchAllVisibleActivities();
+      rawResult = await _fetchGlobalActivities(f);
     }
 
     return rawResult.map((items) {
@@ -117,10 +117,10 @@ class ApiActivityRepository implements ActivityRepository {
     });
   }
 
-  Future<Result<List<Activity>, Failure>> _fetchLeadActivities(
+  Future<Result<List<Activity>, Failure>> _fetchLeadActivitiesAndNotes(
     String leadId,
   ) async {
-    final res = await client.get<List<Activity>>(
+    final actsFuture = client.get<List<Activity>>(
       ApiConstant.crmLeadActivitiesUrl(leadId),
       params: const {'include_done': true},
       parse: (raw) {
@@ -133,21 +133,49 @@ class ApiActivityRepository implements ActivityRepository {
         ];
       },
     );
-    return res.map((activities) {
-      final notes = client.leadNotesById[leadId] ?? const <Activity>[];
-      final byId = <String, Activity>{
-        for (final a in activities) a.id: a,
-        for (final n in notes) n.id: n,
-      };
-      return byId.values.toList();
-    });
+
+    final notesFuture = client.get<List<Activity>>(
+      ApiConstant.crmLeadNotesUrl(leadId),
+      parse: (raw) {
+        final map = Map<String, dynamic>.from(raw as Map);
+        final list = (map['data'] as List?) ?? const [];
+        return [
+          for (final item in list)
+            if (item is Map)
+              client.parseNote(
+                Map<String, dynamic>.from(item),
+                relatedId: leadId,
+                relatedType: RelatedType.opportunity,
+              ),
+        ];
+      },
+    );
+
+    final actsRes = await actsFuture;
+    final notesRes = await notesFuture;
+
+    if (actsRes case Err(:final error)) return Err(error);
+
+    final activities = (actsRes as Ok<List<Activity>, Failure>).value;
+    final remoteNotes = switch (notesRes) {
+      Ok(:final value) => value,
+      Err() => const <Activity>[],
+    };
+    final cachedNotes = client.leadNotesById[leadId] ?? const <Activity>[];
+
+    final byId = <String, Activity>{
+      for (final a in activities) a.id: a,
+      for (final n in cachedNotes) n.id: n,
+      for (final n in remoteNotes) n.id: n,
+    };
+    return Ok(byId.values.toList());
   }
 
-  Future<Result<List<Activity>, Failure>> _fetchCustomerActivities(
+  Future<Result<List<Activity>, Failure>> _fetchCustomerActivitiesAndNotes(
     String customerId, {
     required bool includeLeads,
   }) async {
-    final res = await client.get<List<Activity>>(
+    final actsFuture = client.get<List<Activity>>(
       ApiConstant.customerActivitiesUrl(customerId),
       params: {
         'include_done': true,
@@ -163,79 +191,81 @@ class ApiActivityRepository implements ActivityRepository {
         ];
       },
     );
-    return res.map((activities) {
-      final notes =
-          client.leadNotesById['customer:$customerId'] ?? const <Activity>[];
-      final byId = <String, Activity>{
-        for (final a in activities) a.id: a,
-        for (final n in notes) n.id: n,
-      };
-      return byId.values.toList();
-    });
-  }
 
-  Future<Result<List<Activity>, Failure>> _fetchAllVisibleActivities() async {
-    final leadsRes = await client.get<List<String>>(
-      ApiConstant.crmLeadsUrl,
-      params: const {'page': 1, 'limit': 50},
-      parse: (raw) {
-        final map = Map<String, dynamic>.from(raw as Map);
-        final list = (map['data'] as List?) ?? const [];
-        final ids = <String>[];
-        for (final item in list) {
-          if (item is Map) {
-            final lead = client.parseLead(Map<String, dynamic>.from(item));
-            ids.add(lead.id);
-          }
-        }
-        return ids;
-      },
-    );
-    if (leadsRes case Err(:final error)) return Err(error);
-
-    final customersRes = await client.get<List<String>>(
-      ApiConstant.customersUrl,
-      params: const {'page': 1, 'limit': 25},
+    final notesFuture = client.get<List<Activity>>(
+      ApiConstant.customerNotesUrl(customerId),
       parse: (raw) {
         final map = Map<String, dynamic>.from(raw as Map);
         final list = (map['data'] as List?) ?? const [];
         return [
           for (final item in list)
-            if (item is Map && item['id'] != null) item['id'].toString(),
+            if (item is Map)
+              client.parseNote(
+                Map<String, dynamic>.from(item),
+                relatedId: customerId,
+                relatedType: RelatedType.customer,
+              ),
         ];
       },
     );
 
-    final leadIds = (leadsRes as Ok<List<String>, Failure>).value;
-    final customerIds = switch (customersRes) {
+    final actsRes = await actsFuture;
+    final notesRes = await notesFuture;
+
+    if (actsRes case Err(:final error)) return Err(error);
+
+    final activities = (actsRes as Ok<List<Activity>, Failure>).value;
+    final remoteNotes = switch (notesRes) {
       Ok(:final value) => value,
-      Err() => const <String>[],
+      Err() => const <Activity>[],
     };
+    final cachedNotes =
+        client.leadNotesById['customer:$customerId'] ?? const <Activity>[];
 
-    final byId = <String, Activity>{};
+    final byId = <String, Activity>{
+      for (final a in activities) a.id: a,
+      for (final n in cachedNotes) n.id: n,
+      for (final n in remoteNotes) n.id: n,
+    };
+    return Ok(byId.values.toList());
+  }
 
-    final futures = <Future<Result<List<Activity>, Failure>>>[
-      for (final leadId in leadIds) _fetchLeadActivities(leadId),
-      for (final customerId in customerIds)
-        _fetchCustomerActivities(customerId, includeLeads: true),
-    ];
+  Future<Result<List<Activity>, Failure>> _fetchGlobalActivities(
+    ActivityFilter filter,
+  ) async {
+    final userId = filter.ownerId != null ? int.tryParse(filter.ownerId!) : null;
+    final res = await client.get<List<Activity>>(
+      ApiConstant.activitiesUrl,
+      params: {
+        'include_done': true,
+        if (userId != null && userId > 0) 'user_id': userId,
+        if (filter.dueFrom != null)
+          'due_from': CrmApiClient.formatDate(filter.dueFrom!),
+        if (filter.dueTo != null)
+          'due_to': CrmApiClient.formatDate(filter.dueTo!),
+      },
+      parse: (raw) {
+        final map = Map<String, dynamic>.from(raw as Map);
+        final list = (map['data'] as List?) ?? const [];
+        return [
+          for (final item in list)
+            if (item is Map)
+              client.parseActivity(Map<String, dynamic>.from(item)),
+        ];
+      },
+    );
 
-    final results = await Future.wait(futures);
-    for (final r in results) {
-      if (r case Ok(:final value)) {
-        for (final a in value) {
-          byId[a.id] = a;
+    return res.map((activities) {
+      final byId = <String, Activity>{
+        for (final a in activities) a.id: a,
+      };
+      for (final notes in client.leadNotesById.values) {
+        for (final n in notes) {
+          byId[n.id] = n;
         }
       }
-    }
-
-    for (final notes in client.leadNotesById.values) {
-      for (final n in notes) {
-        byId[n.id] = n;
-      }
-    }
-
-    return Ok(byId.values.toList());
+      return byId.values.toList();
+    });
   }
 
   @override
@@ -254,6 +284,19 @@ class ApiActivityRepository implements ActivityRepository {
     };
   }
 
+  List<int> _extractMentionUserIds(String summary) {
+    final ids = <int>[];
+    for (final u in client.usersById.values) {
+      if (u.name.isNotEmpty && summary.contains('@${u.name}')) {
+        final idInt = int.tryParse(u.id);
+        if (idInt != null && idInt > 0 && !ids.contains(idInt)) {
+          ids.add(idInt);
+        }
+      }
+    }
+    return ids;
+  }
+
   @override
   Future<Result<Activity, Failure>> create(Activity a) async {
     final summary = a.summary.trim();
@@ -263,9 +306,9 @@ class ApiActivityRepository implements ActivityRepository {
       );
     }
 
-    // 1. Notes on leads/opportunities use `POST /api/v1/crm/leads/{lead_id}/notes`.
-    if (a.type == ActivityType.note &&
-        a.relatedType == RelatedType.opportunity) {
+    // 1. Notes on leads or customers use `/api/v1/crm/leads/{id}/notes` or
+    //    `/api/v1/customers/{id}/notes`.
+    if (a.type == ActivityType.note) {
       final validFiles = <File>[];
       for (final path in a.attachments) {
         if (!path.startsWith('http://') && !path.startsWith('https://')) {
@@ -273,54 +316,41 @@ class ApiActivityRepository implements ActivityRepository {
           if (file.existsSync()) validFiles.add(file);
         }
       }
+      final mentionIds = _extractMentionUserIds(summary);
       final useMultipart = validFiles.isNotEmpty;
       final Object body = useMultipart
           ? <String, dynamic>{
               'body': summary,
+              if (mentionIds.isNotEmpty) 'mention_user_ids': mentionIds,
               'files': validFiles,
             }
-          : <String, dynamic>{'body': summary};
+          : <String, dynamic>{
+              'body': summary,
+              if (mentionIds.isNotEmpty) 'mention_user_ids': mentionIds,
+            };
+
+      final url = a.relatedType == RelatedType.customer
+          ? ApiConstant.customerNotesUrl(a.relatedId)
+          : ApiConstant.crmLeadNotesUrl(a.relatedId);
 
       return client.post<Activity>(
-        ApiConstant.crmLeadNotesUrl(a.relatedId),
+        url,
         body: body,
         isMultipart: useMultipart,
         fieldMap: _activityFieldMap,
         parse: (raw) {
           final map = Map<String, dynamic>.from(raw as Map);
           final data = Map<String, dynamic>.from(map['data'] as Map);
-          return client.parseNote(data, leadId: a.relatedId);
+          return client.parseNote(
+            data,
+            relatedId: a.relatedId,
+            relatedType: a.relatedType,
+          );
         },
       );
     }
 
-    // 2. Notes on customers: store in session notes & post a done activity if possible.
-    if (a.type == ActivityType.note && a.relatedType == RelatedType.customer) {
-      final noteActivity = a.copyWith(
-        state: ActivityState.done,
-        updatedAt: DateTime.now().toUtc(),
-      );
-      final list = client.leadNotesById.putIfAbsent(
-        'customer:${a.relatedId}',
-        () => [],
-      );
-      list.removeWhere((x) => x.id == noteActivity.id);
-      list.add(noteActivity);
-      client.addSessionHistory(
-        RelatedType.customer,
-        a.relatedId,
-        HistoryEntry(
-          id: 'h-${noteActivity.id}',
-          kind: HistoryKind.note,
-          at: noteActivity.updatedAt,
-          actorName: client.currentUser?.name ?? 'User',
-          text: summary,
-        ),
-      );
-      return Ok(noteActivity);
-    }
-
-    // 3. Scheduled activities and logged interactions on leads or customers.
+    // 2. Scheduled activities and logged interactions on leads or customers.
     if (a.type == ActivityType.todo && a.dueAt == null) {
       return const Err(
         Failure.validation(
@@ -336,7 +366,10 @@ class ApiActivityRepository implements ActivityRepository {
     );
     if (typeId == null) {
       return const Err(
-        Failure.validation('No matching activity type configured', field: 'type'),
+        Failure.validation(
+          'No matching activity type configured',
+          field: 'type',
+        ),
       );
     }
 
@@ -438,35 +471,11 @@ class ApiActivityRepository implements ActivityRepository {
     String id, {
     required DateTime dueAt,
     required DateTime expectedUpdatedAt,
-  }) async {
-    final existing = client.activitiesById[id];
-    if (existing == null) {
-      return const Err(Failure.unknown('Activity not found'));
-    }
-
-    final typeId =
-        client.activityTypeIdByActivityId[id] ??
-        await _resolveOdooActivityTypeId(existing.type, existing.relatedType);
-    if (typeId == null) {
-      return const Err(
-        Failure.validation('No matching activity type configured', field: 'type'),
-      );
-    }
-
-    final url = existing.relatedType == RelatedType.customer
-        ? ApiConstant.customerActivitiesUrl(existing.relatedId)
-        : ApiConstant.crmLeadActivitiesUrl(existing.relatedId);
-
-    final userId = int.tryParse(existing.ownerId);
-    final createRes = await client.post<Activity>(
-      url,
+  }) {
+    return client.put<Activity>(
+      ApiConstant.activityByIdUrl(id),
       body: {
-        'activity_type_id': typeId,
-        'summary': existing.summary,
-        if (existing.outcome != null && existing.outcome!.isNotEmpty)
-          'note': existing.outcome,
         'date_deadline': CrmApiClient.formatDate(dueAt),
-        if (userId != null && userId > 0) 'user_id': userId,
       },
       fieldMap: _activityFieldMap,
       parse: (raw) {
@@ -475,22 +484,6 @@ class ApiActivityRepository implements ActivityRepository {
         return client.parseActivity(data);
       },
     );
-
-    if (createRes case Ok(:final value)) {
-      if (int.tryParse(id) != null && id != value.id) {
-        // Complete the superseded activity so only the rescheduled one stays open.
-        await client.post<void>(
-          ApiConstant.activityDoneUrl(id),
-          body: {
-            'feedback': 'Rescheduled to ${CrmApiClient.formatDate(dueAt)}',
-          },
-          parse: (_) {},
-        );
-        client.activitiesById.remove(id);
-      }
-    }
-
-    return createRes;
   }
 
   Future<int?> _resolveOdooActivityTypeId(

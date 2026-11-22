@@ -177,7 +177,7 @@ class WeekActivityCard extends ConsumerWidget {
     final from = today.subtract(const Duration(days: 6));
     final acts = ref
         .watch(activityListProvider(ActivityFilter(dueFrom: from)))
-        .value;
+        .valueOrNull;
     if (acts == null) return const Panel(child: LinearProgressIndicator());
     final counts = List<int>.filled(7, 0);
     for (final a in acts) {

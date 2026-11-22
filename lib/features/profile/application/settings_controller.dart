@@ -33,14 +33,14 @@ class SettingsController extends AsyncNotifier<AppSettings> {
 
   Future<void> setThemeMode(ThemeMode mode) async {
     state = AsyncData(
-      (state.value ?? const AppSettings()).copyWith(themeMode: mode),
+      (state.valueOrNull ?? const AppSettings()).copyWith(themeMode: mode),
     );
     await ref.read(keyValueStoreProvider).put('theme_mode', mode.name);
   }
 
   Future<void> setLocale(Locale? locale) async {
     state = AsyncData(
-      (state.value ?? const AppSettings()).copyWith(locale: () => locale),
+      (state.valueOrNull ?? const AppSettings()).copyWith(locale: () => locale),
     );
     await ref
         .read(keyValueStoreProvider)

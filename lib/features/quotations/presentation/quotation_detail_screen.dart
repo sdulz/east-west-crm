@@ -74,7 +74,7 @@ class _QuotationDetailScreenState extends ConsumerState<QuotationDetailScreen> {
     final customers = ref.watch(customerNamesProvider).valueOrNull ?? const {};
     final canConfirm = ref.watch(permissionsProvider).canCreateOpportunity;
     return Scaffold(
-      appBar: AppBar(title: Text(q.value?.number ?? l.quotation)),
+      appBar: AppBar(title: Text(q.valueOrNull?.number ?? l.quotation)),
       body: AsyncView<Quotation>(
         value: q,
         onRetry: () => ref.invalidate(quotationDetailProvider(widget.id)),

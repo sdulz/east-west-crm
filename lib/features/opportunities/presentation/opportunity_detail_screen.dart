@@ -74,7 +74,7 @@ class _OpportunityDetailScreenState
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: !widget.embedded,
-        title: Text(opp.value?.title ?? l.opportunity),
+        title: Text(opp.valueOrNull?.title ?? l.opportunity),
         actions: [
           if (perms.canEditOpportunity && opp.hasValue)
             IconButton(
@@ -92,7 +92,7 @@ class _OpportunityDetailScreenState
           context,
           relatedType: RelatedType.opportunity,
           relatedId: id,
-          customerId: opp.value?.customerId,
+          customerId: opp.valueOrNull?.customerId,
         ),
         child: const Icon(Icons.add),
       ),
@@ -103,7 +103,7 @@ class _OpportunityDetailScreenState
           final stage = stages.where((s) => s.id == o.stageId).firstOrNull;
           final phone = ref
               .watch(customerDetailProvider(o.customerId))
-              .value
+              .valueOrNull
               ?.phone;
           return ListView(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),

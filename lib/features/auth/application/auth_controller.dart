@@ -57,7 +57,7 @@ class AuthController extends AsyncNotifier<Session?> {
     final r = await ref
         .read(authRepositoryProvider)
         .updateProfile(name: name, phone: phone, avatarPath: avatarPath);
-    final s = state.value;
+    final s = state.valueOrNull;
     if (r case Ok(:final value) when s != null) {
       state = AsyncData(s.copyWith(user: value));
     }
@@ -93,7 +93,7 @@ class AuthController extends AsyncNotifier<Session?> {
       'true';
 
   Future<void> logout() async {
-    final token = state.value?.token;
+    final token = state.valueOrNull?.token;
     if (token != null) await ref.read(authRepositoryProvider).logout(token);
     await ref.read(secureStoreProvider).delete(SecureKeys.sessionToken);
     await ref.read(pendingQueueRepositoryProvider).clear();
@@ -102,7 +102,7 @@ class AuthController extends AsyncNotifier<Session?> {
 }
 
 final currentUserProvider = Provider<AppUser?>((ref) =>
-    ref.watch(authControllerProvider).value?.user);
+    ref.watch(authControllerProvider).valueOrNull?.user);
 
 final permissionsProvider = Provider<Permissions>((ref) =>
     ref.watch(currentUserProvider)?.permissions ?? const Permissions());

@@ -1,9 +1,12 @@
 import 'package:field_crm/core/format/app_formatters.dart';
+import 'package:field_crm/core/network/crm_api_client.dart';
 import 'package:field_crm/core/widgets/failure_text.dart';
 import 'package:field_crm/core/widgets/pending_badge.dart';
 import 'package:field_crm/features/activities/application/activity_controllers.dart';
 import 'package:field_crm/features/activities/domain/activity.dart';
 import 'package:field_crm/features/activities/presentation/follow_up_actions.dart';
+import 'package:field_crm/features/customers/application/customer_controllers.dart';
+import 'package:field_crm/features/opportunities/application/opportunity_controllers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -25,6 +28,23 @@ class ActivityTile extends ConsumerWidget {
   final Activity activity;
   final bool showActions;
 
+  String? _resolveRelatedName(WidgetRef ref, Activity a) {
+    final fromDoc = ref
+        .watch(crmApiClientProvider)
+        .documentNames['${a.relatedType.name}:${a.relatedId}'];
+    if (fromDoc != null && fromDoc.isNotEmpty) return fromDoc;
+
+    if (a.relatedType == RelatedType.customer) {
+      return ref.watch(customerNamesProvider).valueOrNull?[a.relatedId];
+    }
+    return ref
+        .watch(opportunityListProvider())
+        .valueOrNull
+        ?.where((o) => o.id == a.relatedId)
+        .firstOrNull
+        ?.title;
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
@@ -33,10 +53,11 @@ class ActivityTile extends ConsumerWidget {
     final a = activity;
     final overdue = a.state == ActivityState.overdue;
     final done = a.state == ActivityState.done;
+    final relatedName = _resolveRelatedName(ref, a);
     final typeLabel =
         ref
             .watch(activityTypesProvider)
-            .value
+            .valueOrNull
             ?.where((t) => t.type == a.type)
             .firstOrNull
             ?.label ??
@@ -54,6 +75,7 @@ class ActivityTile extends ConsumerWidget {
       ),
       subtitle: Text(
         [
+          if (relatedName != null && relatedName.isNotEmpty) relatedName,
           typeLabel,
           if (a.dueAt != null) f.dateTime(a.dueAt!),
           if (overdue) l.overdue,

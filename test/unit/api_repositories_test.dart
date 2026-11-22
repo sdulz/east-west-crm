@@ -12,11 +12,14 @@ import 'package:field_crm/common/utils/base_repository/repository_details.dart';
 import 'package:field_crm/core/result/failure.dart';
 import 'package:field_crm/core/result/result.dart';
 import 'package:field_crm/features/activities/domain/activity.dart';
+import 'package:field_crm/features/auth/domain/app_user.dart';
 import 'package:field_crm/features/auth/domain/session.dart';
 import 'package:field_crm/features/customers/domain/customer.dart';
 import 'package:field_crm/features/history/domain/history_entry.dart';
+import 'package:field_crm/features/notifications/domain/app_notification.dart';
 import 'package:field_crm/features/opportunities/domain/opportunity.dart';
 import 'package:field_crm/features/pipeline/domain/pipeline_stage.dart';
+import 'package:field_crm/features/quotations/domain/quotation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -87,55 +90,83 @@ void main() {
     return c;
   }
 
-  test('Auth: login, profile, refresh-token, change-password, logout', () async {
+  test('Auth: login, profile with role & permissions, refresh-token, change-password, logout', () async {
     var profileName = 'Sita Sharma';
     container = createContainer((req) {
       final path = Uri.parse(req.path).path;
       if (path == '/api/v1/auth/login' && req.method == 'POST') {
         return _jsonResponse({
-          'status': true,
+          'status': 200,
           'message': 'Login successful',
           'data': {
             'token': 'tok-123',
             'refresh_token': 'ref-456',
-            'expires_at': 86400,
+            'expires_at': '2026-11-21T10:00:00Z',
             'user': {
+              'id': 7,
               'name': 'Sita Sharma',
               'email': 'sita@ewe.com.np',
               'phone': '+9779800000000',
               'address': 'Kathmandu',
               'image': '/api/v1/image/res.users/7/image_1920',
+              'role': 'salesperson',
+              'team_id': 2,
+              'timezone': 'Asia/Kathmandu',
+              'permissions': {
+                'can_create_customer': true,
+                'can_edit_customer': true,
+                'can_create_opportunity': true,
+                'can_edit_opportunity': true,
+                'can_change_stage': true,
+                'can_reassign': false,
+                'can_view_team': false,
+                'can_log_activity': true,
+              },
             },
           },
         });
       }
       if (path == '/api/v1/profile' && req.method == 'GET') {
         return _jsonResponse({
-          'status': true,
+          'status': 200,
           'message': 'OK',
           'data': {
+            'id': 7,
             'name': profileName,
             'email': 'sita@ewe.com.np',
             'phone': '+9779811111111',
             'address': 'Lalitpur',
             'image': '/api/v1/image/res.users/7/image_1920',
+            'role': 'salesperson',
+            'team_id': 2,
+            'timezone': 'Asia/Kathmandu',
+            'permissions': {
+              'can_create_customer': true,
+              'can_edit_customer': true,
+              'can_create_opportunity': true,
+              'can_edit_opportunity': true,
+              'can_change_stage': true,
+              'can_reassign': false,
+              'can_view_team': false,
+              'can_log_activity': true,
+            },
           },
         });
       }
       if (path == '/api/v1/profile/update' && req.method == 'POST') {
         profileName = 'Sita Sharma Updated';
-        return _jsonResponse({'status': true, 'message': 'Updated', 'data': null});
+        return _jsonResponse({'status': 200, 'message': 'Updated', 'data': null});
       }
       if (path == '/api/v1/auth/change-password' && req.method == 'POST') {
-        return _jsonResponse({'status': true, 'message': 'Changed', 'data': null});
+        return _jsonResponse({'status': 200, 'message': 'Changed', 'data': null});
       }
       if (path == '/api/v1/auth/forget-password' && req.method == 'POST') {
-        return _jsonResponse({'status': true, 'message': 'Sent', 'data': null});
+        return _jsonResponse({'status': 200, 'message': 'Sent', 'data': null});
       }
       if (path == '/api/v1/auth/logout' && req.method == 'POST') {
-        return _jsonResponse({'status': true, 'message': 'Logged out', 'data': null});
+        return _jsonResponse({'status': 200, 'message': 'Logged out', 'data': null});
       }
-      return _jsonResponse({'status': false, 'message': 'Unexpected $path'}, statusCode: 404);
+      return _jsonResponse({'status': 404, 'message': 'Unexpected $path'}, statusCode: 404);
     });
 
     final auth = container.read(authRepositoryProvider);
@@ -150,6 +181,11 @@ void main() {
     expect(session.token, 'tok-123');
     expect(session.user.id, '7');
     expect(session.user.name, 'Sita Sharma');
+    expect(session.user.role, UserRole.salesperson);
+    expect(session.user.teamId, '2');
+    expect(session.user.permissions.canReassign, isFalse);
+    expect(session.user.permissions.canViewTeam, isFalse);
+    expect(session.user.permissions.canCreateCustomer, isTrue);
     expect(
       session.user.avatarPath,
       '${ApiConstant.baseUrl}/api/v1/image/res.users/7/image_1920',
@@ -179,13 +215,13 @@ void main() {
     expect(logoutRes.isOk, isTrue);
   });
 
-  test('Customers: list, getById, create, update, and 409 conflict', () async {
+  test('Customers: list, getById, create with vat, update, and 409 conflict', () async {
     var failWithConflict = false;
     container = createContainer((req) {
       final path = Uri.parse(req.path).path;
       if (path == '/api/v1/customers' && req.method == 'GET') {
         return _jsonResponse({
-          'status': true,
+          'status': 200,
           'message': 'OK',
           'data': [
             {
@@ -201,6 +237,7 @@ void main() {
               'state': null,
               'zip': '44600',
               'country': 'Nepal',
+              'vat': '600123456',
               'company': null,
             },
           ],
@@ -213,7 +250,7 @@ void main() {
         if (failWithConflict) {
           return _jsonResponse(
             {
-              'status': false,
+              'status': 409,
               'message': 'A customer with this phone already exists',
               'data': {
                 'id': 10,
@@ -226,7 +263,7 @@ void main() {
         }
         return _jsonResponse(
           {
-            'status': true,
+            'status': 201,
             'message': 'Created',
             'data': {
               'id': 11,
@@ -241,6 +278,7 @@ void main() {
               'state': null,
               'zip': null,
               'country': 'Nepal',
+              'vat': '300999888',
               'company': {'id': 10, 'name': 'East West Enterprises'},
             },
           },
@@ -249,18 +287,19 @@ void main() {
       }
       if (path == '/api/v1/customers/11' && req.method == 'PUT') {
         return _jsonResponse({
-          'status': true,
+          'status': 200,
           'message': 'Updated',
           'data': {
             'id': 11,
             'name': 'Hari Bahadur KC',
             'type': 'individual',
             'phone': '+9779841000000',
+            'vat': '300999888',
             'company': {'id': 10, 'name': 'East West Enterprises'},
           },
         });
       }
-      return _jsonResponse({'status': false, 'message': 'Not found'}, statusCode: 404);
+      return _jsonResponse({'status': 404, 'message': 'Not found'}, statusCode: 404);
     });
 
     final repo = container.read(customerRepositoryProvider);
@@ -270,6 +309,7 @@ void main() {
     final customers = (listRes as Ok<List<Customer>, Failure>).value;
     expect(customers.single.id, '10');
     expect(customers.single.isCompany, isTrue);
+    expect(customers.single.taxId, '600123456');
 
     final createRes = await repo.create(
       Customer(
@@ -282,6 +322,7 @@ void main() {
         address: 'Pulchowk',
         city: 'Lalitpur',
         country: 'Nepal',
+        taxId: '300999888',
         updatedAt: DateTime.utc(2026),
       ),
     );
@@ -289,6 +330,7 @@ void main() {
     final created = (createRes as Ok<Customer, Failure>).value;
     expect(created.id, '11');
     expect(created.parentId, '10');
+    expect(created.taxId, '300999888');
 
     final updateRes = await repo.update(
       created.copyWith(name: 'Hari Bahadur KC'),
@@ -311,7 +353,7 @@ void main() {
       final path = Uri.parse(req.path).path;
       if (path == '/api/v1/crm/stages' && req.method == 'GET') {
         return _jsonResponse({
-          'status': true,
+          'status': 200,
           'message': 'OK',
           'data': [
             {
@@ -346,7 +388,7 @@ void main() {
       }
       if (path == '/api/v1/crm/leads' && req.method == 'GET') {
         return _jsonResponse({
-          'status': true,
+          'status': 200,
           'message': 'OK',
           'data': [
             {
@@ -378,7 +420,7 @@ void main() {
       }
       if (path == '/api/v1/crm/leads/100/stage' && req.method == 'PUT') {
         return _jsonResponse({
-          'status': true,
+          'status': 200,
           'message': 'Stage updated',
           'data': {
             'id': 100,
@@ -394,7 +436,7 @@ void main() {
       }
       if (path == '/api/v1/crm/leads/100' && req.method == 'PUT') {
         return _jsonResponse({
-          'status': true,
+          'status': 200,
           'message': 'Lead updated',
           'data': {
             'id': 100,
@@ -408,7 +450,7 @@ void main() {
           },
         });
       }
-      return _jsonResponse({'status': false, 'message': 'Not found'}, statusCode: 404);
+      return _jsonResponse({'status': 404, 'message': 'Not found'}, statusCode: 404);
     });
 
     final pipelineRepo = container.read(pipelineRepositoryProvider);
@@ -444,12 +486,12 @@ void main() {
     expect((reassignRes as Ok<Opportunity, Failure>).value.ownerId, '8');
   });
 
-  test('Activities & Notes: types, list, create activity, create note, complete', () async {
+  test('Activities, Notes & History: types, global list, lead notes, reschedule, complete, history', () async {
     container = createContainer((req) {
       final path = Uri.parse(req.path).path;
       if (path == '/api/v1/activity-types' && req.method == 'GET') {
         return _jsonResponse({
-          'status': true,
+          'status': 200,
           'message': 'OK',
           'data': [
             {
@@ -476,9 +518,9 @@ void main() {
           ],
         });
       }
-      if (path == '/api/v1/crm/leads/100/activities' && req.method == 'GET') {
+      if (path == '/api/v1/activities' && req.method == 'GET') {
         return _jsonResponse({
-          'status': true,
+          'status': 200,
           'message': 'OK',
           'data': [
             {
@@ -487,15 +529,9 @@ void main() {
               'state': 'planned',
               'activity_type': {'id': 3, 'name': 'To-Do'},
               'category': 'default',
-              'icon': 'fa-check',
               'summary': 'Send revised quotation',
-              'note': null,
-              'feedback': null,
               'date_deadline': '2026-11-01',
-              'date_done': null,
-              'create_date': '2026-10-25 09:00:00',
               'user': {'id': 7, 'name': 'Sita Sharma'},
-              'author': {'id': 10, 'name': 'Sita Sharma'},
               'document': {
                 'model': 'lead',
                 'id': 100,
@@ -505,10 +541,48 @@ void main() {
           ],
         });
       }
+      if (path == '/api/v1/crm/leads/100/activities' && req.method == 'GET') {
+        return _jsonResponse({
+          'status': 200,
+          'message': 'OK',
+          'data': [
+            {
+              'id': 501,
+              'message_id': null,
+              'state': 'planned',
+              'activity_type': {'id': 3, 'name': 'To-Do'},
+              'category': 'default',
+              'summary': 'Send revised quotation',
+              'date_deadline': '2026-11-01',
+              'user': {'id': 7, 'name': 'Sita Sharma'},
+              'document': {
+                'model': 'lead',
+                'id': 100,
+                'name': 'Solar Inverter Deal',
+              },
+            },
+          ],
+        });
+      }
+      if (path == '/api/v1/crm/leads/100/notes' && req.method == 'GET') {
+        return _jsonResponse({
+          'status': 200,
+          'message': 'OK',
+          'data': [
+            {
+              'id': 7000,
+              'body': 'Initial lead note',
+              'author': {'id': 7, 'name': 'Sita Sharma'},
+              'date': '2026-10-29T10:00:00Z',
+              'attachments': const [],
+            },
+          ],
+        });
+      }
       if (path == '/api/v1/crm/leads/100/activities' && req.method == 'POST') {
         return _jsonResponse(
           {
-            'status': true,
+            'status': 201,
             'message': 'Scheduled',
             'data': {
               'id': 502,
@@ -529,9 +603,30 @@ void main() {
           statusCode: 201,
         );
       }
+      if (path == '/api/v1/activities/502' && req.method == 'PUT') {
+        return _jsonResponse({
+          'status': 200,
+          'message': 'Rescheduled',
+          'data': {
+            'id': 502,
+            'message_id': null,
+            'state': 'planned',
+            'activity_type': {'id': 3, 'name': 'To-Do'},
+            'category': 'default',
+            'summary': 'Site inspection',
+            'date_deadline': '2026-11-10',
+            'user': {'id': 7, 'name': 'Sita Sharma'},
+            'document': {
+              'model': 'lead',
+              'id': 100,
+              'name': 'Solar Inverter Deal',
+            },
+          },
+        });
+      }
       if (path == '/api/v1/activities/501/done' && req.method == 'POST') {
         return _jsonResponse({
-          'status': true,
+          'status': 200,
           'message': 'Completed',
           'data': {
             'id': null,
@@ -541,7 +636,7 @@ void main() {
             'category': 'default',
             'summary': 'Send revised quotation',
             'feedback': 'Sent via email',
-            'date_done': '2026-10-30 12:00:00',
+            'date_done': '2026-10-30',
             'user': {'id': 7, 'name': 'Sita Sharma'},
             'document': {
               'model': 'lead',
@@ -554,13 +649,13 @@ void main() {
       if (path == '/api/v1/crm/leads/100/notes' && req.method == 'POST') {
         return _jsonResponse(
           {
-            'status': true,
+            'status': 201,
             'message': 'Note created',
             'data': {
               'id': 7001,
               'body': 'Customer requested 5% discount',
               'author': {'id': 10, 'name': 'Sita Sharma'},
-              'date': '2026-10-30 12:30:00',
+              'date': '2026-10-30T12:30:00Z',
               'attachments': [
                 {
                   'id': 301,
@@ -575,7 +670,33 @@ void main() {
           statusCode: 201,
         );
       }
-      return _jsonResponse({'status': false, 'message': 'Not found'}, statusCode: 404);
+      if (path == '/api/v1/crm/leads/100/history' && req.method == 'GET') {
+        return _jsonResponse({
+          'status': 200,
+          'message': 'OK',
+          'data': [
+            {
+              'id': 801,
+              'kind': 'stage_change',
+              'at': '2026-10-30T11:00:00Z',
+              'actor_name': 'Sita Sharma',
+              'from': 'New',
+              'to': 'Qualified',
+              'text': null,
+            },
+            {
+              'id': 802,
+              'kind': 'activity',
+              'at': '2026-10-30T12:00:00Z',
+              'actor_name': 'Sita Sharma',
+              'from': null,
+              'to': null,
+              'text': 'Send revised quotation — Sent via email',
+            },
+          ],
+        });
+      }
+      return _jsonResponse({'status': 404, 'message': 'Not found'}, statusCode: 404);
     });
 
     final actRepo = container.read(activityRepositoryProvider);
@@ -584,6 +705,10 @@ void main() {
     expect(typesRes.isOk, isTrue);
     final typeDefs = (typesRes as Ok<List<ActivityTypeDef>, Failure>).value;
     expect(typeDefs.any((t) => t.isFollowUp), isTrue);
+
+    final globalListRes = await actRepo.list();
+    expect(globalListRes.isOk, isTrue);
+    expect((globalListRes as Ok<List<Activity>, Failure>).value, isNotEmpty);
 
     final createTodoRes = await actRepo.create(
       Activity(
@@ -599,6 +724,17 @@ void main() {
     );
     expect(createTodoRes.isOk, isTrue);
     expect((createTodoRes as Ok<Activity, Failure>).value.id, '502');
+
+    final rescheduleRes = await actRepo.reschedule(
+      '502',
+      dueAt: DateTime.utc(2026, 11, 10),
+      expectedUpdatedAt: DateTime.utc(2026, 10, 30),
+    );
+    expect(rescheduleRes.isOk, isTrue);
+    expect(
+      (rescheduleRes as Ok<Activity, Failure>).value.dueAt,
+      DateTime.utc(2026, 11, 10),
+    );
 
     final createNoteRes = await actRepo.create(
       Activity(
@@ -636,7 +772,217 @@ void main() {
     );
     expect(historyRes.isOk, isTrue);
     final entries = (historyRes as Ok<List<HistoryEntry>, Failure>).value;
-    expect(entries.any((e) => e.kind == HistoryKind.note), isTrue);
+    expect(entries.any((e) => e.kind == HistoryKind.stageChange), isTrue);
     expect(entries.any((e) => e.kind == HistoryKind.activity), isTrue);
+  });
+
+  test('Sales, Notifications, Users & Teams: products, quotations, invoices, notifications, directory', () async {
+    container = createContainer((req) {
+      final path = Uri.parse(req.path).path;
+      if (path == '/api/v1/products' && req.method == 'GET') {
+        return _jsonResponse({
+          'status': 200,
+          'message': 'OK',
+          'data': [
+            {
+              'id': 1,
+              'name': 'Solar Inverter 5kW',
+              'unit_price': 85000.0,
+              'unit': 'unit',
+              'is_active': true,
+            },
+          ],
+          'currentPage': 1,
+          'lastPage': 1,
+          'total': 1,
+        });
+      }
+      if (path == '/api/v1/quotations' && req.method == 'POST') {
+        return _jsonResponse(
+          {
+            'status': 201,
+            'message': 'Created',
+            'data': {
+              'id': 101,
+              'number': 'S00042',
+              'customer_id': 10,
+              'opportunity_id': 100,
+              'owner_id': 7,
+              'status': 'draft',
+              'notes': 'Valid for 15 days',
+              'items': [
+                {
+                  'product_id': 1,
+                  'description': 'Solar Inverter 5kW',
+                  'quantity': 2.0,
+                  'unit_price': 85000.0,
+                },
+              ],
+              'total': 170000.0,
+              'created_at': '2026-11-20T06:00:00Z',
+              'updated_at': '2026-11-20T06:00:00Z',
+            },
+          },
+          statusCode: 201,
+        );
+      }
+      if (path == '/api/v1/quotations/101/confirm' && req.method == 'POST') {
+        return _jsonResponse({
+          'status': 200,
+          'message': 'Confirmed',
+          'data': {
+            'id': 201,
+            'number': 'INV/2026/0012',
+            'quotation_id': 101,
+            'customer_id': 10,
+            'amount': 170000.0,
+            'status': 'pending',
+            'due_at': '2026-12-20T00:00:00Z',
+            'created_at': '2026-11-20T06:00:00Z',
+            'paid_at': null,
+          },
+        });
+      }
+      if (path == '/api/v1/invoices/201/pay' && req.method == 'POST') {
+        return _jsonResponse({
+          'status': 200,
+          'message': 'Paid',
+          'data': {
+            'id': 201,
+            'number': 'INV/2026/0012',
+            'quotation_id': 101,
+            'customer_id': 10,
+            'amount': 170000.0,
+            'status': 'paid',
+            'due_at': '2026-12-20T00:00:00Z',
+            'created_at': '2026-11-20T06:00:00Z',
+            'paid_at': '2026-11-20T07:00:00Z',
+          },
+        });
+      }
+      if (path == '/api/v1/notifications' && req.method == 'GET') {
+        return _jsonResponse({
+          'status': 200,
+          'message': 'OK',
+          'data': [
+            {
+              'id': 501,
+              'user_id': 7,
+              'kind': 'assignment',
+              'title': 'Maya assigned you an opportunity',
+              'body': 'Solar Inverter Deal',
+              'related_type': 'opportunity',
+              'related_id': '100',
+              'created_at': '2026-11-20T06:00:00Z',
+              'read_at': null,
+            },
+          ],
+          'currentPage': 1,
+          'lastPage': 1,
+          'total': 1,
+        });
+      }
+      if (path == '/api/v1/notifications/501/read' && req.method == 'POST') {
+        return _jsonResponse({
+          'status': 200,
+          'message': 'Read',
+          'data': {
+            'id': 501,
+            'user_id': 7,
+            'kind': 'assignment',
+            'title': 'Maya assigned you an opportunity',
+            'body': 'Solar Inverter Deal',
+            'related_type': 'opportunity',
+            'related_id': '100',
+            'created_at': '2026-11-20T06:00:00Z',
+            'read_at': '2026-11-20T07:00:00Z',
+          },
+        });
+      }
+      if (path == '/api/v1/users' && req.method == 'GET') {
+        return _jsonResponse({
+          'status': 200,
+          'message': 'OK',
+          'data': [
+            {
+              'id': 7,
+              'name': 'Sita Sharma',
+              'email': 'sita@ewe.com.np',
+              'role': 'salesperson',
+              'team_id': 1,
+              'is_active': true,
+              'image': '/api/v1/image/res.users/7/image_1920',
+            },
+            {
+              'id': 8,
+              'name': 'Ram Thapa',
+              'email': 'ram@ewe.com.np',
+              'role': 'salesperson',
+              'team_id': 1,
+              'is_active': true,
+              'image': '/api/v1/image/res.users/8/image_1920',
+            },
+          ],
+        });
+      }
+      return _jsonResponse({'status': 404, 'message': 'Not found'}, statusCode: 404);
+    });
+
+    final quoteRepo = container.read(quotationRepositoryProvider);
+    final productsRes = await quoteRepo.products();
+    expect(productsRes.isOk, isTrue);
+    expect((productsRes as Ok<List<Product>, Failure>).value.single.name, 'Solar Inverter 5kW');
+
+    final createQuoteRes = await quoteRepo.create(
+      Quotation(
+        id: 'local-q',
+        number: '',
+        customerId: '10',
+        opportunityId: '100',
+        ownerId: '7',
+        notes: 'Valid for 15 days',
+        items: const [
+          QuotationItem(
+            productId: '1',
+            description: 'Solar Inverter 5kW',
+            quantity: 2,
+            unitPrice: 85000,
+          ),
+        ],
+        createdAt: DateTime.utc(2026, 11, 20),
+        updatedAt: DateTime.utc(2026, 11, 20),
+      ),
+    );
+    expect(createQuoteRes.isOk, isTrue);
+    final createdQuote = (createQuoteRes as Ok<Quotation, Failure>).value;
+    expect(createdQuote.id, '101');
+    expect(createdQuote.number, 'S00042');
+    expect(createdQuote.total, 170000.0);
+
+    final confirmRes = await quoteRepo.confirm('101');
+    expect(confirmRes.isOk, isTrue);
+    final invoice = (confirmRes as Ok<Invoice, Failure>).value;
+    expect(invoice.id, '201');
+    expect(invoice.status, InvoiceStatus.pending);
+
+    final payRes = await quoteRepo.markPaid('201');
+    expect(payRes.isOk, isTrue);
+    expect((payRes as Ok<Invoice, Failure>).value.status, InvoiceStatus.paid);
+
+    final notifRepo = container.read(notificationRepositoryProvider);
+    final notifsRes = await notifRepo.list();
+    expect(notifsRes.isOk, isTrue);
+    final notif = (notifsRes as Ok<List<AppNotification>, Failure>).value.single;
+    expect(notif.id, '501');
+    expect(notif.kind, NotificationKind.assignment);
+    expect(notif.isUnread, isTrue);
+
+    final markReadRes = await notifRepo.markRead('501');
+    expect(markReadRes.isOk, isTrue);
+
+    final userDirRepo = container.read(userDirectoryRepositoryProvider);
+    final usersRes = await userDirRepo.users();
+    expect(usersRes.isOk, isTrue);
+    expect((usersRes as Ok<List<AppUser>, Failure>).value.length, 2);
   });
 }

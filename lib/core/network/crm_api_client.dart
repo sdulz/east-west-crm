@@ -119,6 +119,9 @@ class CrmApiClient {
   /// Cached activity type ID (`activityId -> int`) for rescheduling.
   final Map<String, int> activityTypeIdByActivityId = {};
 
+  /// Cached related record names (`"customer:10"` or `"opportunity:100" -> name`).
+  final Map<String, String> documentNames = {};
+
   BaseRepository get _openRepo => ref.read(openBaseRepoProvider);
   BaseRepository get _tokenRepo => ref.read(tokenBaseRepoProvider);
 
@@ -399,20 +402,67 @@ class CrmApiClient {
         currentUser?.id ??
         (email.isNotEmpty ? email : '1');
 
+    final roleStr = _nonEmptyStr(json['role'])?.toLowerCase();
+    final role = roleStr == 'salesperson'
+        ? UserRole.salesperson
+        : UserRole.supervisor;
+
+    final teamId = json['team_id']?.toString() ?? currentUser?.teamId ?? '1';
+    final timezone = _nonEmptyStr(json['timezone']) ?? 'Asia/Kathmandu';
+    final isActive = json['is_active'] as bool? ?? true;
+
+    Permissions permissions = role == UserRole.salesperson
+        ? defaultApiPermissions.copyWith(canReassign: false, canViewTeam: false)
+        : defaultApiPermissions;
+    if (json['permissions'] is Map) {
+      final p = Map<String, dynamic>.from(json['permissions'] as Map);
+      permissions = Permissions(
+        canCreateCustomer:
+            p['can_create_customer'] as bool? ?? permissions.canCreateCustomer,
+        canEditCustomer:
+            p['can_edit_customer'] as bool? ?? permissions.canEditCustomer,
+        canCreateOpportunity:
+            p['can_create_opportunity'] as bool? ??
+            permissions.canCreateOpportunity,
+        canEditOpportunity:
+            p['can_edit_opportunity'] as bool? ??
+            permissions.canEditOpportunity,
+        canChangeStage:
+            p['can_change_stage'] as bool? ?? permissions.canChangeStage,
+        canReassign: p['can_reassign'] as bool? ?? permissions.canReassign,
+        canViewTeam: p['can_view_team'] as bool? ?? permissions.canViewTeam,
+        canLogActivity:
+            p['can_log_activity'] as bool? ?? permissions.canLogActivity,
+      );
+    }
+
     final user = AppUser(
       id: id,
       name: name.isEmpty ? 'User' : name,
       email: email,
-      role: UserRole.supervisor,
-      teamId: currentUser?.teamId ?? '1',
-      permissions: defaultApiPermissions,
-      timezone: 'Asia/Kathmandu',
-      isActive: true,
+      role: role,
+      teamId: teamId,
+      permissions: permissions,
+      timezone: timezone,
+      isActive: isActive,
       phone: phone,
       avatarPath: resolvedImage,
     );
     usersById[user.id] = user;
     return user;
+  }
+
+  Team parseTeam(Map<String, dynamic> json) {
+    final id = json['id'].toString();
+    final name = (json['name'] ?? 'Sales Team').toString();
+    final supervisorId =
+        json['supervisor_id']?.toString() ??
+        teamsById[id]?.supervisorId ??
+        currentUser?.id ??
+        '1';
+    final team = Team(id: id, name: name, supervisorId: supervisorId);
+    teamsById[id] = team;
+    return team;
   }
 
   void registerUserRef(Map<String, dynamic>? userMap, {String? teamId}) {
@@ -476,6 +526,7 @@ class CrmApiClient {
         : _nonEmptyStr(json['address']);
     final city = _nonEmptyStr(json['city']);
     final country = _nonEmptyStr(json['country']);
+    final taxId = _nonEmptyStr(json['vat']) ?? _nonEmptyStr(json['tax_id']);
 
     return Customer(
       id: id,
@@ -487,6 +538,7 @@ class CrmApiClient {
       address: address,
       city: city,
       country: country,
+      taxId: taxId,
       updatedAt: DateTime.now().toUtc(),
     );
   }
@@ -516,6 +568,13 @@ class CrmApiClient {
     if (json['partner'] is Map) {
       final partner = Map<String, dynamic>.from(json['partner'] as Map);
       customerId = partner['id']?.toString() ?? '';
+      final partnerName = _nonEmptyStr(partner['name']);
+      if (partnerName != null && customerId.isNotEmpty) {
+        documentNames['${RelatedType.customer.name}:$customerId'] = partnerName;
+      }
+    }
+    if (title.isNotEmpty) {
+      documentNames['${RelatedType.opportunity.name}:$id'] = title;
     }
 
     String stageId = '';
@@ -543,16 +602,12 @@ class CrmApiClient {
     final probability = (json['probability'] as num?)?.round() ?? 0;
 
     final deadlineStr = _nonEmptyStr(json['date_deadline']);
-    final nextActionAt = deadlineStr != null
-        ? DateTime.tryParse(deadlineStr)?.toUtc()
-        : null;
+    final nextActionAt = parseUtcDate(deadlineStr);
     final description = _nonEmptyStr(json['description']);
 
     final updatedAtStr =
         _nonEmptyStr(json['date_closed']) ?? _nonEmptyStr(json['create_date']);
-    final updatedAt = updatedAtStr != null
-        ? (DateTime.tryParse(updatedAtStr)?.toUtc() ?? DateTime.now().toUtc())
-        : DateTime.now().toUtc();
+    final updatedAt = parseUtcDate(updatedAtStr) ?? DateTime.now().toUtc();
 
     return Opportunity(
       id: id,
@@ -605,6 +660,10 @@ class CrmApiClient {
           ? RelatedType.customer
           : RelatedType.opportunity;
       relatedId = doc['id']?.toString() ?? '';
+      final docName = _nonEmptyStr(doc['name']);
+      if (docName != null && relatedId.isNotEmpty) {
+        documentNames['${relatedType.name}:$relatedId'] = docName;
+      }
     }
 
     String ownerId = currentUser?.id ?? '';
@@ -633,18 +692,13 @@ class CrmApiClient {
     final doneStr = _nonEmptyStr(json['date_done']);
     final createStr = _nonEmptyStr(json['create_date']);
 
-    final dueAt = deadlineStr != null
-        ? DateTime.tryParse(deadlineStr)?.toUtc()
-        : (doneStr != null
-              ? DateTime.tryParse(doneStr)?.toUtc()
-              : (createStr != null
-                    ? DateTime.tryParse(createStr)?.toUtc()
-                    : null));
+    final dueAt =
+        parseUtcDate(deadlineStr) ??
+        parseUtcDate(doneStr) ??
+        parseUtcDate(createStr);
 
     final updatedAt =
-        (createStr != null ? DateTime.tryParse(createStr)?.toUtc() : null) ??
-        dueAt ??
-        DateTime.now().toUtc();
+        parseUtcDate(createStr) ?? dueAt ?? DateTime.now().toUtc();
 
     final activity = Activity(
       id: id,
@@ -669,7 +723,13 @@ class CrmApiClient {
     return activity;
   }
 
-  Activity parseNote(Map<String, dynamic> json, {required String leadId}) {
+  Activity parseNote(
+    Map<String, dynamic> json, {
+    String? leadId,
+    String? relatedId,
+    RelatedType relatedType = RelatedType.opportunity,
+  }) {
+    final targetId = relatedId ?? leadId ?? '';
     final id = 'note-${json['id'] ?? DateTime.now().microsecondsSinceEpoch}';
     final body = _nonEmptyStr(json['body']) ?? 'Attachment';
 
@@ -681,9 +741,7 @@ class CrmApiClient {
     }
 
     final dateStr = _nonEmptyStr(json['date']);
-    final at = dateStr != null
-        ? (DateTime.tryParse(dateStr)?.toUtc() ?? DateTime.now().toUtc())
-        : DateTime.now().toUtc();
+    final at = parseUtcDate(dateStr) ?? DateTime.now().toUtc();
 
     final attachments = <String>[];
     if (json['attachments'] is List) {
@@ -703,8 +761,8 @@ class CrmApiClient {
     final noteActivity = Activity(
       id: id,
       type: ActivityType.note,
-      relatedType: RelatedType.opportunity,
-      relatedId: leadId,
+      relatedType: relatedType,
+      relatedId: targetId,
       summary: body,
       ownerId: ownerId,
       dueAt: at,
@@ -713,13 +771,16 @@ class CrmApiClient {
       attachments: attachments,
     );
 
-    final list = leadNotesById.putIfAbsent(leadId, () => []);
+    final cacheKey = relatedType == RelatedType.customer
+        ? 'customer:$targetId'
+        : targetId;
+    final list = leadNotesById.putIfAbsent(cacheKey, () => []);
     list.removeWhere((x) => x.id == noteActivity.id);
     list.add(noteActivity);
 
     addSessionHistory(
-      RelatedType.opportunity,
-      leadId,
+      relatedType,
+      targetId,
       HistoryEntry(
         id: 'h-$id',
         kind: HistoryKind.note,
@@ -730,6 +791,48 @@ class CrmApiClient {
     );
 
     return noteActivity;
+  }
+
+  HistoryEntry parseHistoryItem(Map<String, dynamic> json) {
+    final id = 'h-${json['id'] ?? DateTime.now().microsecondsSinceEpoch}';
+    final kindStr = (json['kind'] ?? 'activity').toString().toLowerCase();
+    final kind = switch (kindStr) {
+      'stage_change' => HistoryKind.stageChange,
+      'owner_change' => HistoryKind.ownerChange,
+      'note' => HistoryKind.note,
+      _ => HistoryKind.activity,
+    };
+    final atStr = _nonEmptyStr(json['at']);
+    final at = parseUtcDate(atStr) ?? DateTime.now().toUtc();
+    final actorName =
+        _nonEmptyStr(json['actor_name']) ?? currentUser?.name ?? 'User';
+
+    return HistoryEntry(
+      id: id,
+      kind: kind,
+      at: at,
+      actorName: actorName,
+      from: _nonEmptyStr(json['from']),
+      to: _nonEmptyStr(json['to']),
+      text: _nonEmptyStr(json['text']),
+    );
+  }
+
+  static final RegExp _dateOnlyRe = RegExp(r'^\d{4}-\d{2}-\d{2}$');
+  static final RegExp _tzOffsetRe = RegExp(r'(Z|[+-]\d{2}:?\d{2})$');
+
+  static DateTime? parseUtcDate(String? raw) {
+    if (raw == null) return null;
+    final s = raw.trim();
+    if (s.isEmpty) return null;
+    if (_dateOnlyRe.hasMatch(s)) {
+      return DateTime.tryParse('${s}T00:00:00Z');
+    }
+    final normalized = s.contains(' ') ? s.replaceFirst(' ', 'T') : s;
+    final withZone = _tzOffsetRe.hasMatch(normalized)
+        ? normalized
+        : '${normalized}Z';
+    return DateTime.tryParse(withZone)?.toUtc();
   }
 
   void addSessionHistory(RelatedType type, String recordId, HistoryEntry entry) {

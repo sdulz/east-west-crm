@@ -39,7 +39,7 @@ class CustomerDetailScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: !embedded,
-        title: Text(customer.value?.name ?? l.customer),
+        title: Text(customer.valueOrNull?.name ?? l.customer),
         actions: [
           if (perms.canEditCustomer && customer.hasValue)
             IconButton(
@@ -163,7 +163,8 @@ class _ParentRow extends ConsumerWidget {
   final String parentId;
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final name = ref.watch(customerNamesProvider).value?[parentId] ?? parentId;
+    final name =
+        ref.watch(customerNamesProvider).valueOrNull?[parentId] ?? parentId;
     return LabeledField(
       label: context.l10n.parentCompany,
       value: name,

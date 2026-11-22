@@ -87,7 +87,7 @@ class _PendingCenterScreenState extends ConsumerState<PendingCenterScreen> {
         actions: [
           TextButton.icon(
             key: const Key('retry_all'),
-            onPressed: _busyAll || (queue.value?.isEmpty ?? true)
+            onPressed: _busyAll || (queue.valueOrNull?.isEmpty ?? true)
                 ? null
                 : _retryAll,
             icon: const Icon(Icons.refresh),

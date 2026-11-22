@@ -12,30 +12,34 @@ class ApiUserDirectoryRepository implements UserDirectoryRepository {
 
   @override
   Future<Result<List<AppUser>, Failure>> users() async {
-    if (client.usersById.length <= 1) {
-      await client.get<void>(
-        ApiConstant.crmLeadsUrl,
-        params: const {'page': 1, 'limit': 50},
-        parse: (raw) {
-          final map = Map<String, dynamic>.from(raw as Map);
-          final list = (map['data'] as List?) ?? const [];
-          for (final item in list) {
-            if (item is Map) {
-              client.parseLead(Map<String, dynamic>.from(item));
-            }
-          }
-        },
-      );
+    final res = await client.get<List<AppUser>>(
+      ApiConstant.usersUrl,
+      parse: (raw) {
+        final map = Map<String, dynamic>.from(raw as Map);
+        final list = (map['data'] as List?) ?? const [];
+        return [
+          for (final item in list)
+            if (item is Map)
+              client.parseUser(Map<String, dynamic>.from(item)),
+        ]..sort((a, b) => a.name.compareTo(b.name));
+      },
+    );
+
+    if (res case Ok(:final value)) {
+      return Ok(value);
     }
 
+    // Fallback to any cached users if endpoint returns an error
     final me = client.currentUser;
     if (me != null && !client.usersById.containsKey(me.id)) {
       client.usersById[me.id] = me;
     }
-
-    final result = client.usersById.values.toList()
-      ..sort((a, b) => a.name.compareTo(b.name));
-    return Ok(result);
+    if (client.usersById.isNotEmpty) {
+      final cached = client.usersById.values.toList()
+        ..sort((a, b) => a.name.compareTo(b.name));
+      return Ok(cached);
+    }
+    return res;
   }
 
   @override
@@ -48,4 +52,3 @@ class ApiUserDirectoryRepository implements UserDirectoryRepository {
     return res.map((list) => list.where((u) => u.isActive).toList());
   }
 }
-

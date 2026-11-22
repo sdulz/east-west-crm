@@ -257,7 +257,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       if (mounted) setState(() => _biometric = v);
                     },
                   ),
-                if (AppEnv.isDev)
+                if (AppEnv.isDev && ref.watch(useMockApiProvider))
                   ListTile(
                     key: const Key('profile_dev'),
                     leading: const Icon(Icons.developer_mode),

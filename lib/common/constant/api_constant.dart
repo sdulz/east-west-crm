@@ -35,6 +35,10 @@ class ApiConstant {
       '$baseApiUrl/customers/$customerId';
   static String customerActivitiesUrl(Object customerId) =>
       '$baseApiUrl/customers/$customerId/activities';
+  static String customerNotesUrl(Object customerId) =>
+      '$baseApiUrl/customers/$customerId/notes';
+  static String customerHistoryUrl(Object customerId) =>
+      '$baseApiUrl/customers/$customerId/history';
 
   // CRM (Stages & Leads)
   static String get crmStagesUrl => '$baseApiUrl/crm/stages';
@@ -48,12 +52,41 @@ class ApiConstant {
       '$baseApiUrl/crm/leads/$leadId/notes';
   static String crmLeadActivitiesUrl(Object leadId) =>
       '$baseApiUrl/crm/leads/$leadId/activities';
+  static String crmLeadHistoryUrl(Object leadId) =>
+      '$baseApiUrl/crm/leads/$leadId/history';
+
+  // Team & Users
+  static String get usersUrl => '$baseApiUrl/users';
+  static String get crmTeamsUrl => '$baseApiUrl/crm/teams';
+  static String get teamUrl => crmTeamsUrl;
 
   // Activities
   static String get activityTypesUrl => '$baseApiUrl/activity-types';
+  static String get activitiesUrl => '$baseApiUrl/activities';
+  static String activityByIdUrl(Object activityId) =>
+      '$baseApiUrl/activities/$activityId';
   static String activityDoneUrl(Object activityId) =>
       '$baseApiUrl/activities/$activityId/done';
-  static String get activitiesUrl => activityTypesUrl;
+
+  // Sales (Products, Quotations & Invoices)
+  static String get productsUrl => '$baseApiUrl/products';
+  static String get quotationsUrl => '$baseApiUrl/quotations';
+  static String quotationByIdUrl(Object quotationId) =>
+      '$baseApiUrl/quotations/$quotationId';
+  static String quotationConfirmUrl(Object quotationId) =>
+      '$baseApiUrl/quotations/$quotationId/confirm';
+  static String quotationInvoiceUrl(Object quotationId) =>
+      '$baseApiUrl/quotations/$quotationId/invoice';
+  static String get invoicesUrl => '$baseApiUrl/invoices';
+  static String invoicePayUrl(Object invoiceId) =>
+      '$baseApiUrl/invoices/$invoiceId/pay';
+
+  // Notifications
+  static String get notificationsUrl => '$baseApiUrl/notifications';
+  static String notificationReadUrl(Object notificationId) =>
+      '$baseApiUrl/notifications/$notificationId/read';
+  static String get notificationsReadAllUrl =>
+      '$baseApiUrl/notifications/read-all';
 
   // Media
   static String attachmentUrl(Object attachmentId, {bool download = false}) =>
@@ -82,13 +115,8 @@ class ApiConstant {
 
   // Legacy aliases
   static String get resetPasswordUrl => forgotPasswordUrl;
-  static String get teamUrl => crmStagesUrl;
-  static String get quotationsUrl => '$baseApiUrl/quotations';
-  static String get productsUrl => '$baseApiUrl/products';
-  static String get invoicesUrl => '$baseApiUrl/invoices';
   static String get dashboardSummaryUrl => '$baseApiUrl/dashboard/summary';
   static String get searchUrl => customersUrl;
-  static String get notificationsUrl => '$baseApiUrl/notifications';
   static String get historyUrl => '$baseApiUrl/history';
   static String get syncUrl => '$baseApiUrl/sync';
 }
