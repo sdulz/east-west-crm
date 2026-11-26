@@ -101,7 +101,10 @@ void main() {
           'data': {
             'token': 'tok-123',
             'refresh_token': 'ref-456',
-            'expires_at': '2026-11-21T10:00:00Z',
+            'expires_at': DateTime.now()
+                .toUtc()
+                .add(const Duration(hours: 24))
+                .toIso8601String(),
             'user': {
               'id': 7,
               'name': 'Sita Sharma',

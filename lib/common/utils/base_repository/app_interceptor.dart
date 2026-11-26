@@ -9,7 +9,9 @@ import 'package:field_crm/common/model/login_response.dart';
 import 'package:field_crm/common/utils/base_repository/base_repository_setup.dart';
 import 'package:field_crm/common/widgets/custom_toast.dart';
 import 'package:field_crm/common/controller/login_session_controller.dart';
+import 'package:field_crm/core/network/crm_api_client.dart';
 import 'package:field_crm/core/storage/secure_store.dart';
+import 'package:field_crm/features/auth/application/auth_controller.dart';
 
 class _PendingRequest {
   final RequestOptions requestOptions;
@@ -29,6 +31,17 @@ class AppInterceptor extends Interceptor {
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) async {
     if (err.response?.statusCode == 401) {
+      final path = err.requestOptions.path;
+      final isAuthEndpoint =
+          path.contains('/auth/login') ||
+          path.contains('/auth/refresh-token') ||
+          path.contains('/auth/logout') ||
+          path.contains('/auth/forget-password');
+      if (isAuthEndpoint) {
+        super.onError(err, handler);
+        return;
+      }
+
       log("⚠️ Received 401 Unauthorized — Attempting token refresh...");
 
       // Skip token refresh if already in the process of logging out
@@ -52,10 +65,21 @@ class AppInterceptor extends Interceptor {
       try {
         final authStorage = ref.read(authStorageProvider);
 
-        // If loginData is null, the user is already logged out or not logged in.
+        // If loginData is missing (e.g. session restored from SecureStore only
+        // or Hive was cleared), still force-logout if the app thinks a user is
+        // logged in or has an active token.
         if (authStorage.loginData == null) {
-          log("No login data available (already logged out). Ignoring 401.");
+          final hasActiveSession =
+              ref.read(authControllerProvider).valueOrNull != null ||
+              (CrmApiClient.activeToken?.isNotEmpty ?? false);
+          if (hasActiveSession) {
+            log("No refresh data available for expired session. Logging out...");
+            _handleLogout("Session expired. Please log in again.");
+          } else {
+            log("No active session (already logged out). Ignoring 401.");
+          }
           handler.reject(err);
+          _rejectPendingRequests(err);
           return;
         }
 
@@ -122,6 +146,10 @@ class AppInterceptor extends Interceptor {
         );
 
         await authStorage.refreshSave(loginResponse);
+        CrmApiClient.setActiveToken(loginResponse.token);
+        ref
+            .read(authControllerProvider.notifier)
+            .updateToken(loginResponse.token);
         final secure = ref.read(secureStoreProvider);
         if (await secure.read(SecureKeys.sessionToken) != null) {
           await secure.write(SecureKeys.sessionToken, loginResponse.token);

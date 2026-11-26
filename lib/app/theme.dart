@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 /// The single place to change the brand. Everything else derives from it.
 ///
 /// Flat and tonal: no shadows, no dividers, surfaces differ by tone only.
 /// Radii: 12 for controls, 16 for panels, 24 for sheets.
 abstract final class AppTheme {
-  static const seedColor = Color(0xFF0B6E4F);
+  /// East West Enterprises brand crimson extracted from `assets/images/logo_ewe.png`.
+  static const seedColor = Color(0xFF901A1B);
 
   static ThemeData light() => _build(Brightness.light);
   static ThemeData dark() => _build(Brightness.dark);
@@ -61,6 +63,11 @@ abstract final class AppTheme {
         scrolledUnderElevation: 0,
         centerTitle: false,
         titleTextStyle: text.titleLarge?.copyWith(color: scheme.onSurface),
+        systemOverlayStyle:
+            (brightness == Brightness.dark
+                    ? SystemUiOverlayStyle.light
+                    : SystemUiOverlayStyle.dark)
+                .copyWith(statusBarColor: Colors.transparent),
       ),
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: scheme.surface,

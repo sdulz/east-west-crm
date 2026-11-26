@@ -9,7 +9,7 @@ abstract final class AppEnv {
   );
   static const appName = String.fromEnvironment(
     'APP_NAME',
-    defaultValue: 'Field CRM',
+    defaultValue: 'East West CRM',
   );
   static const currencyCode = String.fromEnvironment(
     'CURRENCY_CODE',

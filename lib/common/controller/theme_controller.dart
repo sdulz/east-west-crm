@@ -15,7 +15,7 @@ class ThemeController extends StateNotifier<AppThemeMode> {
   static const String _themeKey = 'app_theme_mode';
   final dynamic _storage;
 
-  ThemeController(this._storage) : super(AppThemeMode.light) {
+  ThemeController(this._storage) : super(AppThemeMode.system) {
     _loadTheme();
   }
 

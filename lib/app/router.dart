@@ -1,5 +1,6 @@
 import 'package:field_crm/app/dev_menu.dart';
 import 'package:field_crm/app/shell.dart';
+import 'package:field_crm/common/constant/key_constant.dart';
 import 'package:field_crm/features/activities/domain/activity.dart';
 import 'package:field_crm/features/activities/presentation/activity_form_screen.dart';
 import 'package:field_crm/features/activities/presentation/follow_ups_screen.dart';
@@ -351,6 +352,7 @@ final routerProvider = Provider<GoRouter>((ref) {
     ..onDispose(refresh.dispose);
 
   return GoRouter(
+    navigatorKey: CommonConstants.navKey,
     routes: $appRoutes,
     initialLocation: '/home',
     refreshListenable: refresh,
@@ -361,7 +363,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       if (auth.isLoading && !auth.hasValue) {
         return at == '/splash' ? null : '/splash';
       }
-      final loggedIn = auth.value != null;
+      final loggedIn = auth.valueOrNull != null;
       if (!loggedIn) {
         return at == '/login' || at == '/forgot-password' ? null : '/login';
       }

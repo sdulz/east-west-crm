@@ -1,7 +1,7 @@
 import 'package:field_crm/app/providers.dart';
 import 'package:field_crm/core/result/result.dart';
+import 'package:field_crm/core/widgets/app_logo.dart';
 import 'package:field_crm/core/widgets/failure_text.dart';
-import 'package:field_crm/core/widgets/section.dart';
 import 'package:field_crm/features/auth/application/auth_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -78,9 +78,7 @@ class _LockScreenState extends ConsumerState<LockScreen> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Center(
-                    child: LeadingGlyph(icon: Icons.lock_outline, size: 72),
-                  ),
+                  const Center(child: AppLogo(size: 96)),
                   const SizedBox(height: 16),
                   Text(
                     l.sessionLocked,

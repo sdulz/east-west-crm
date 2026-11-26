@@ -8,10 +8,12 @@ import 'package:field_crm/common/constant/size_constant.dart';
 import 'package:field_crm/common/controller/theme_controller.dart';
 import 'package:field_crm/common/route/route_manager.dart';
 import 'package:field_crm/core/l10n/generated/app_localizations.dart';
+import 'package:field_crm/core/widgets/app_logo.dart';
 import 'package:field_crm/features/auth/application/auth_controller.dart';
 import 'package:field_crm/features/pending/application/reconnect_retry.dart';
 import 'package:field_crm/features/profile/application/settings_controller.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
@@ -44,43 +46,43 @@ class _MyAppState extends ConsumerState<MyApp> {
         builder: (context, ref, _) {
           final settings = ref.watch(settingsControllerProvider).valueOrNull ??
               const AppSettings();
-          final themeMode = ref.watch(themeProvider);
-
-          ThemeMode mappedThemeMode;
-          switch (themeMode) {
-            case AppThemeMode.light:
-              mappedThemeMode = ThemeMode.light;
-              currentTheme = AppColorConstant.light;
-              break;
-            case AppThemeMode.dark:
-              mappedThemeMode = ThemeMode.dark;
-              currentTheme = AppColorConstant.dark;
-              break;
-            case AppThemeMode.system:
-              mappedThemeMode = settings.themeMode;
-              final brightness =
-                  View.of(context).platformDispatcher.platformBrightness;
-              currentTheme = brightness == Brightness.light
-                  ? AppColorConstant.light
-                  : AppColorConstant.dark;
-              break;
-          }
+          final themeMode = settings.themeMode;
+          final platformBrightness =
+              View.of(context).platformDispatcher.platformBrightness;
+          final isDark =
+              themeMode == ThemeMode.dark ||
+              (themeMode == ThemeMode.system &&
+                  platformBrightness == Brightness.dark);
+          currentTheme =
+              isDark ? AppColorConstant.dark : AppColorConstant.light;
 
           Intl.defaultLocale = settings.locale?.languageCode;
 
-          return MaterialApp.router(
-            key: ValueKey(mappedThemeMode),
-            debugShowCheckedModeBanner: false,
-            title: AppEnv.appName,
-            theme: AppTheme.light(),
-            darkTheme: AppTheme.dark(),
-            themeMode: mappedThemeMode,
-            locale: settings.locale,
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            routerConfig: routes,
-            builder: (context, child) => InactivityGuard(
-              child: PrivacyScreen(child: child ?? const SizedBox.shrink()),
+          final overlayStyle = (isDark
+                  ? SystemUiOverlayStyle.light
+                  : SystemUiOverlayStyle.dark)
+              .copyWith(
+                statusBarColor: Colors.transparent,
+                systemNavigationBarColor: Colors.transparent,
+                systemNavigationBarIconBrightness:
+                    isDark ? Brightness.light : Brightness.dark,
+              );
+
+          return AnnotatedRegion<SystemUiOverlayStyle>(
+            value: overlayStyle,
+            child: MaterialApp.router(
+              debugShowCheckedModeBanner: false,
+              title: AppEnv.appName,
+              theme: AppTheme.light(),
+              darkTheme: AppTheme.dark(),
+              themeMode: themeMode,
+              locale: settings.locale,
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              routerConfig: routes,
+              builder: (context, child) => InactivityGuard(
+                child: PrivacyScreen(child: child ?? const SizedBox.shrink()),
+              ),
             ),
           );
         },
@@ -180,7 +182,7 @@ class _PrivacyScreenState extends State<PrivacyScreen> {
           child: ColoredBox(
             color: Theme.of(context).colorScheme.surface,
             child: const Center(
-              child: Icon(Icons.handshake_outlined, size: 64),
+              child: AppLogo(size: 112),
             ),
           ),
         ),

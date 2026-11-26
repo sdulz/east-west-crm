@@ -75,6 +75,7 @@ flutter:
   generate: true
   assets:
     - assets/seed/
+    - assets/images/
 
 hooks:
   user_defines:

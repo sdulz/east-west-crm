@@ -8,14 +8,14 @@ plugins {
 }
 
 android {
-    namespace = "com.fieldcrm.field_crm"
+    namespace = "com.eastwest.crm"
     compileSdk = 36
     ndkVersion = "29.0.14033849"
 
     packaging { jniLibs { pickFirsts += "lib/**/libc++_shared.so" } }
 
     defaultConfig {
-        applicationId = "com.fieldcrm.field_crm"
+        applicationId = "com.eastwest.crm"
         minSdk = 26
         targetSdk = 36
         versionCode = flutter.versionCode
@@ -84,17 +84,17 @@ android {
         create("production") {
             dimension = "default"
             applicationIdSuffix = ""
-            manifestPlaceholders["appName"] = "Field CRM"
+            manifestPlaceholders["appName"] = "East West CRM"
         }
         create("staging") {
             dimension = "default"
             applicationIdSuffix = ".stag"
-            manifestPlaceholders["appName"] = "Field CRM Staging"
+            manifestPlaceholders["appName"] = "East West CRM Staging"
         }
         create("uat") {
             dimension = "default"
             applicationIdSuffix = ".uat"
-            manifestPlaceholders["appName"] = "Field CRM UAT"
+            manifestPlaceholders["appName"] = "East West CRM UAT"
         }
     }
 

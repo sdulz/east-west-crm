@@ -2,7 +2,7 @@ class ImageConstants {
   ImageConstants._();
   static const String imageUrl = 'assets/images';
   static const String noInternetSVG = '$imageUrl/no_internet.png';
-  static const String appLogo = '$imageUrl/name_logo.png';
+  static const String appLogo = '$imageUrl/logo_ewe.png';
   static const String calendarImage = '$imageUrl/calendar.png';
   static const String discussions = '$imageUrl/discussions.png';
   static const String live = '$imageUrl/live.png';

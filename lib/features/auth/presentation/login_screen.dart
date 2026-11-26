@@ -4,8 +4,8 @@ import 'package:field_crm/app/env.dart';
 import 'package:field_crm/app/router.dart';
 import 'package:field_crm/core/result/failure.dart';
 import 'package:field_crm/core/result/result.dart';
+import 'package:field_crm/core/widgets/app_logo.dart';
 import 'package:field_crm/core/widgets/failure_text.dart';
-import 'package:field_crm/core/widgets/section.dart';
 import 'package:field_crm/features/auth/application/auth_controller.dart';
 import 'package:field_crm/features/auth/data/mock_auth_repository.dart';
 import 'package:flutter/material.dart';
@@ -106,12 +106,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      const Center(
-                        child: LeadingGlyph(
-                          icon: Icons.handshake_outlined,
-                          size: 72,
-                        ),
-                      ),
+                      const Center(child: AppLogo(size: 180)),
                       const SizedBox(height: 16),
                       Text(
                         AppEnv.appName,

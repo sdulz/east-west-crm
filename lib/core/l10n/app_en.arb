@@ -1,6 +1,6 @@
 {
   "@@locale": "en",
-  "appTitle": "Field CRM",
+  "appTitle": "East West CRM",
   "navHome": "Home",
   "navClients": "Clients",
   "navCrm": "CRM",
@@ -12,7 +12,7 @@
   "password": "Password",
   "rememberMe": "Remember me",
   "unlockWithBiometrics": "Unlock with biometrics",
-  "biometricReason": "Unlock Field CRM",
+  "biometricReason": "Unlock East West CRM",
   "enableBiometricUnlock": "Enable biometric unlock",
   "loginInvalid": "Email or password is incorrect.",
   "loginInactive": "This account is inactive. Contact your supervisor.",

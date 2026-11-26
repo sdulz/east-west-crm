@@ -1,4 +1,4 @@
-package com.fieldcrm.field_crm;
+package com.eastwest.crm;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 import org.junit.Test;

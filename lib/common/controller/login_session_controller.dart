@@ -3,14 +3,16 @@ import 'dart:developer';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
+import 'package:field_crm/app/providers.dart';
 import 'package:field_crm/common/constant/api_constant.dart';
-import 'package:field_crm/common/constant/key_constant.dart';
 import 'package:field_crm/common/controller/local_storage_provider.dart';
 import 'package:field_crm/common/model/login_response.dart';
 import 'package:field_crm/common/repository/auth_storage.dart';
 import 'package:field_crm/common/utils/base_repository/custom_api_exception.dart';
 import 'package:field_crm/common/widgets/custom_toast.dart';
+import 'package:field_crm/core/network/crm_api_client.dart';
+import 'package:field_crm/core/storage/secure_store.dart';
+import 'package:field_crm/features/auth/application/auth_controller.dart';
 
 final loginSessionProvider =
     StateNotifierProvider<LoginSessionController, bool>((ref) {
@@ -40,11 +42,14 @@ class LoginSessionController extends StateNotifier<bool> {
   bool hasJustLoggedIn = false;
 
   void setIsLogged(Duration tillWhen, {bool isNewLogin = false}) {
+    if (!mounted) return;
     state = true;
     if (isNewLogin) {
       hasJustLoggedIn = true;
     }
     _timer?.cancel();
+
+    if (tillWhen <= Duration.zero) return;
 
     final refreshDuration = Duration(
       milliseconds: (tillWhen.inMilliseconds * 0.9).round(),
@@ -56,12 +61,14 @@ class LoginSessionController extends StateNotifier<bool> {
 
     _timer = Timer(refreshDuration, () {
       _timer?.cancel();
-      tryFetchAccessToken();
+      if (mounted) {
+        tryFetchAccessToken();
+      }
     });
   }
 
   Future<void> tryFetchAccessToken() async {
-    if (_isFetchingAccessToken) {
+    if (!mounted || _isFetchingAccessToken) {
       log("Already fetching access token. New request blocked.");
       return;
     }
@@ -88,6 +95,18 @@ class LoginSessionController extends StateNotifier<bool> {
         fallbackUser: currentLoginData.user,
       );
       await localStorage.refreshSave(newLoginResponse);
+      CrmApiClient.setActiveToken(newLoginResponse.token);
+      ref
+          .read(authControllerProvider.notifier)
+          .updateToken(newLoginResponse.token);
+      try {
+        final secure = ref.read(secureStoreProvider);
+        if (await secure.read(SecureKeys.sessionToken) != null) {
+          await secure.write(SecureKeys.sessionToken, newLoginResponse.token);
+        }
+      } on Object {
+        // Ignore if secure storage is unavailable.
+      }
 
       setIsLogged(newLoginResponse.durationRemainingToExpire);
       log("Access token refreshed proactively");
@@ -95,8 +114,10 @@ class LoginSessionController extends StateNotifier<bool> {
       log("Proactive token refresh failed: ${e.toString()}");
       log(s.toString());
 
+      if (!mounted) return;
       if (e is DioException) {
-        if (e.response?.statusCode == 401 || e.response?.statusCode == 403) {
+        final code = e.response?.statusCode;
+        if (code == 400 || code == 401 || code == 403) {
           showCustomToast(
             "Session expired. Please login again.",
             ToastType.warning,
@@ -111,17 +132,15 @@ class LoginSessionController extends StateNotifier<bool> {
   }
 
   void logout() {
-    if (_isLoggingOut) return;
+    if (!mounted || _isLoggingOut) return;
     _isLoggingOut = true;
 
     state = false;
     _timer?.cancel();
     localStorage.logout();
 
-    final context = CommonConstants.navKey.currentContext;
-    if (context != null && context.mounted) {
-      context.go('/login');
-    }
+    // Clear Riverpod auth state & secure storage so GoRouter redirects to /login.
+    unawaited(ref.read(authControllerProvider.notifier).forceLogout());
 
     Future.delayed(const Duration(milliseconds: 500), () {
       _isLoggingOut = false;

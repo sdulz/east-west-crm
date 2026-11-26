@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:field_crm/app/providers.dart';
+import 'package:field_crm/common/controller/local_storage_provider.dart';
+import 'package:field_crm/core/network/crm_api_client.dart';
 import 'package:field_crm/core/result/failure.dart';
 import 'package:field_crm/core/result/result.dart';
 import 'package:field_crm/core/storage/secure_store.dart';
@@ -92,12 +94,52 @@ class AuthController extends AsyncNotifier<Session?> {
       await ref.read(secureStoreProvider).read(SecureKeys.biometricEnabled) ==
       'true';
 
+  void updateToken(String newToken) {
+    final s = state.valueOrNull;
+    if (s != null) {
+      state = AsyncData(s.copyWith(token: newToken));
+    }
+  }
+
+  /// Local-only forced logout used when a token expires (401) or refresh fails.
+  /// Does not call `/auth/logout` (which would fail with 401 again) and
+  /// immediately clears auth state so GoRouter redirects to `/login`.
+  Future<void> forceLogout() async {
+    CrmApiClient.setActiveToken(null);
+    try {
+      ref.read(crmApiClientProvider).currentUser = null;
+    } on Object {
+      // Ignore if not initialized.
+    }
+    try {
+      ref.read(authStorageProvider).logout();
+    } on Object {
+      // Ignore if local storage is not initialized.
+    }
+    try {
+      await ref.read(secureStoreProvider).delete(SecureKeys.sessionToken);
+    } on Object {
+      // Ignore if secure store is unavailable.
+    }
+    try {
+      await ref.read(pendingQueueRepositoryProvider).clear();
+    } on Object {
+      // Ignore if database is unavailable.
+    }
+    ref.read(appLockProvider.notifier).unlock();
+    state = const AsyncData(null);
+  }
+
   Future<void> logout() async {
     final token = state.valueOrNull?.token;
-    if (token != null) await ref.read(authRepositoryProvider).logout(token);
-    await ref.read(secureStoreProvider).delete(SecureKeys.sessionToken);
-    await ref.read(pendingQueueRepositoryProvider).clear();
-    state = const AsyncData(null);
+    if (token != null) {
+      try {
+        await ref.read(authRepositoryProvider).logout(token);
+      } on Object {
+        // Always complete local logout even if the server call fails.
+      }
+    }
+    await forceLogout();
   }
 }
 

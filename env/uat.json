@@ -1,6 +1,6 @@
 {
   "FLAVOR": "uat",
-  "APP_NAME": "Field CRM (uat)",
+  "APP_NAME": "East West CRM (uat)",
   "CURRENCY_CODE": "NPR",
   "SENTRY_DSN": "",
   "INACTIVITY_TIMEOUT_MINUTES": 30,

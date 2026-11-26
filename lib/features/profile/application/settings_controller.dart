@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:field_crm/app/providers.dart';
+import 'package:field_crm/common/controller/theme_controller.dart';
 
 class AppSettings {
   const AppSettings({this.themeMode = ThemeMode.system, this.locale});
@@ -35,6 +36,16 @@ class SettingsController extends AsyncNotifier<AppSettings> {
     state = AsyncData(
       (state.valueOrNull ?? const AppSettings()).copyWith(themeMode: mode),
     );
+    try {
+      final mapped = switch (mode) {
+        ThemeMode.light => AppThemeMode.light,
+        ThemeMode.dark => AppThemeMode.dark,
+        ThemeMode.system => AppThemeMode.system,
+      };
+      ref.read(themeProvider.notifier).setTheme(mapped);
+    } on Object {
+      // Ignore if localStorageProvider is not active in isolated unit tests.
+    }
     await ref.read(keyValueStoreProvider).put('theme_mode', mode.name);
   }
 

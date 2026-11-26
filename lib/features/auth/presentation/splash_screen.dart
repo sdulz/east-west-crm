@@ -1,4 +1,4 @@
-import 'package:field_crm/core/widgets/section.dart';
+import 'package:field_crm/core/widgets/app_logo.dart';
 import 'package:flutter/material.dart';
 
 class SplashScreen extends StatelessWidget {
@@ -10,7 +10,7 @@ class SplashScreen extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          LeadingGlyph(icon: Icons.handshake_outlined, size: 72),
+          AppLogo(size: 240),
           SizedBox(height: 24),
           SizedBox.square(
             dimension: 24,

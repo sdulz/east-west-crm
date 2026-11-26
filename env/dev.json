@@ -1,6 +1,6 @@
 {
   "FLAVOR": "dev",
-  "APP_NAME": "Field CRM (dev)",
+  "APP_NAME": "East West CRM (dev)",
   "CURRENCY_CODE": "NPR",
   "SENTRY_DSN": "",
   "INACTIVITY_TIMEOUT_MINUTES": 30,
